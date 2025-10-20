@@ -118,7 +118,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-
+STATICFILES_DIRS = [
+    # Reemplaza 'theme' si tu carpeta de estáticos se llama diferente o está en otro lugar
+    BASE_DIR / 'theme/static', 
+]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

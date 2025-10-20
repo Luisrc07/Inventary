@@ -1,0 +1,111 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario | Dashboard</title>
+    <link href="{% static 'css/dist/styles.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="flex h-screen bg-gray-100">
+
+        <aside id="sidebar"
+            class="
+                w-64          
+                bg-gray-800   
+                text-white    
+                h-full        
+                fixed         
+                z-30          
+                lg:relative   
+                transform     
+                -translate-x-full 
+                lg:translate-x-0  
+                transition-transform duration-300 ease-in-out
+            "
+        >
+            <div class="p-4 border-b border-gray-700">
+                <h1 class="text-2xl font-bold text-indigo-400">
+                    Inventario 
+                </h1>
+            </div>
+
+            <nav class="p-4 space-y-2">
+                <p class="text-xs font-semibold uppercase text-gray-400">
+                    Gestión
+                </p>
+
+                <a href="#" class="flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150">
+                    <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
+                </a>
+
+                <a href="#" class="flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md">
+                    <i class="fas fa-boxes mr-3"></i>
+                    Productos
+                </a>
+
+                <a href="#" class="flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150">
+                    <i class="fas fa-exchange-alt mr-3"></i>
+                    Movimientos
+                </a>
+
+                <a href="#" class="flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150">
+                    <i class="fas fa-truck mr-3"></i>
+                    Proveedores
+                </a>
+            </nav>
+
+            <hr class="mx-4 border-gray-700">
+
+            <nav class="p-4 space-y-2">
+                <p class="text-xs font-semibold uppercase text-gray-400">
+                    Información
+                </p>
+
+                <a href="#" class="flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150">
+                    <i class="fas fa-chart-line mr-3"></i>
+                    Reportes
+                </a>
+
+                <a href="#" class="flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150">
+                    <i class="fas fa-cog mr-3"></i>
+                    Configuración
+                </a>
+            </nav>
+
+            <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
+                <div class="flex items-center p-2 rounded-lg hover:bg-gray-700 cursor-pointer transition duration-150">
+                    <i class="fas fa-user-circle text-gray-400 text-2xl w-8 h-8 mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium">Jane Doe</p>
+                        <p class="text-xs text-gray-400">Administrador</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto">
+            <button id="sidebar-toggle" class="lg:hidden p-4 text-gray-800 focus:outline-none">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+            
+            <div class="p-6">
+                <h2 class="text-3xl font-semibold text-gray-800 mb-6">Contenido Principal</h2>
+                
+                {% block content %}
+                
+                {% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.getElementById('sidebar-toggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('sidebar').classList.toggle('translate-x-0');
+        });
+    </script>
+</body>
+</html>
