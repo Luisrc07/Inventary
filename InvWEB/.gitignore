@@ -1,48 +1,40 @@
-# 🐍 Python
+# --- PYTHON / DJANGO ---
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-*.so
 *.egg-info/
 *.egg
 *.log
 *.sqlite3
 
-# 🧱 Django
+# --- VIRTUAL ENVIRONMENTS ---
+venv/
+.venv/
+ENV/
+env/
+
+# --- DJANGO STATIC / MEDIA ---
 db.sqlite3
 media/
 staticfiles/
 *.pot
-*.pyc
-.env
-.env.*
 
-# 🧩 Virtual environment
-venv/
-ENV/
-env/
-.venv/
-
-# 📦 Node / Tailwind
+# --- NODE / TAILWIND ---
 theme/node_modules/
 theme/static_src/node_modules/
+theme/static/css/dist/
 theme/static_src/package-lock.json
-theme/static_src/.npm/
+theme/static_src/yarn.lock
 theme/static_src/.cache/
 theme/static_src/.parcel-cache/
-theme/static_src/yarn.lock
-theme/static_src/dist/
-theme/static/css/dist/
 
-# ⚙️ OS-specific
+# --- OS / EDITORS ---
 .DS_Store
 Thumbs.db
-
-# 🧠 VSCode / IDE
 .vscode/
 .idea/
 *.code-workspace
 
-# 🧪 Misc
+# --- OTHER ---
 __MACOSX/
