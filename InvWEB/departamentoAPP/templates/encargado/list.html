@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block tittle %}Encargados{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Encargados</h1>
+<a href="{% url 'departamentoAPP:encargado_crear' %}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 mb-4 inline-block">
+    Crear Encargado
+</a>
+
+<table class="min-w-full bg-white shadow rounded-lg overflow-hidden">
+    <thead class="bg-gray-200">
+        <tr>
+            <th class="px-4 py-2">Apellido</th>
+            <th class="px-4 py-2">Nombre</th>
+            <th class="px-4 py-2">Teléfono</th>
+            <th class="px-4 py-2">Email</th>
+            <th class="px-4 py-2">Activo</th>
+            <th class="px-4 py-2">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for encargado in encargados %}
+        <tr class="border-b">
+            <td class="px-4 py-2">{{ encargado.apellidos }}</td>
+            <td class="px-4 py-2">{{ encargado.nombres }}</td>
+            <td class="px-4 py-2">{{ encargado.telefono }}</td>
+            <td class="px-4 py-2">{{ encargado.email }}</td>
+            <td class="px-4 py-2">{{ encargado.activo }}</td>
+            <td class="px-4 py-2">
+                <a href="{% url 'departamentoAPP:encargado_editar' encargado.id %}" class="text-indigo-600 hover:underline">Editar</a> |
+                <a href="{% url 'departamentoAPP:encargado_eliminar' encargado.id %}" class="text-red-600 hover:underline">Eliminar</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

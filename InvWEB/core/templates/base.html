@@ -42,11 +42,29 @@
                     <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
                 </a>
 
-                {% url 'departamentoAPP:departamento_list' as dep %}
-                <a href="{{dep}}" class="{% if request.path == dep %} flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md {% else %} flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
-                    <i class="fas fa-boxes mr-3"></i>
-                    Departamento
-                </a>
+                <div x-data="{ open: false }" class="relative">
+                        <button type="button"
+                            onclick="document.getElementById('submenu-departamento').classList.toggle('hidden')"
+                            class="flex items-center w-full p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150"
+                        >
+                            <i class="fas fa-boxes mr-3"></i>
+                            <span>Departamento</span>
+                            <i class="fas fa-chevron-down ml-auto"></i>
+                        </button>
+
+                        <!-- Submenu -->
+                        <div id="submenu-departamento" class="ml-6 mt-1 space-y-1 hidden">
+                            {% url 'departamentoAPP:departamento_list' as dep_list %}
+                            <a href="{{ dep_list }}" class="block px-4 py-1 rounded text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150">
+                                Departamentos
+                            </a>
+
+                            {% url 'departamentoAPP:encargado_list' as enc_list %}
+                            <a href="{{ enc_list }}" class="block px-4 py-1 rounded text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150">
+                                Encargados
+                            </a>
+                        </div>
+                    </div>
                 
                 {% url 'inventarioAPP:producto_list' as prod   %}
                 <a href="{{prod}}" class=" {% if request.path == prod %} flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md  {% else %} flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
@@ -60,7 +78,8 @@
                 Movimientos
             </a>
 
-                <a href="#" class="flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150">
+                {% url 'proveedorAPP:prov_list' as prov %}
+                <a href="{{prov}}" class="{% if request.path == prov %} flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md {% else %} flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
                     <i class="fas fa-truck mr-3"></i>
                     Proveedores
                 </a>

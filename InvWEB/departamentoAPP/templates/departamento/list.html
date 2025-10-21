@@ -1,0 +1,48 @@
+{% extends 'base.html' %}  {# Hereda el layout principal con sidebar #}
+
+{% block tittle %}Departamentos{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Departamentos</h1>
+
+<div class="bg-white p-6 rounded-xl shadow-lg">
+    <div class="flex justify-end mb-4">
+
+        {% url 'departamentoAPP:departamento_crear' as create_url %}
+        <a href="{{ create_url }}" class="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md">
+            <i class="fas fa-plus mr-2"></i> 
+            Crear Departamento
+        </a>
+
+    </div>
+    
+ <div class="overflow-x-auto">
+    <table class="min-w-full bg-white shadow rounded-lg overflow-hidden">
+    
+    <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Encargado</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activo</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                    {% for departamento in departamentos %}
+                    <tr class="border-b">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ departamento.nombre }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ departamento.encargado }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ departamento.activo }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            
+                            <a href="{% url 'departamentoAPP:departamento_editar' departamento.id %}" class="text-indigo-600 hover:underline">Editar</a> |
+                            <a href="{% url 'departamentoAPP:departamento_eliminar' departamento.id %}" class="text-red-600 hover:underline">Eliminar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+    </table>
+
+</div>
+</div>
+{% endblock %}

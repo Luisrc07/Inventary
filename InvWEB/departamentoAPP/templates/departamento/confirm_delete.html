@@ -1,0 +1,15 @@
+{% extends 'core/base.html' %}
+
+{% block tittle %}Eliminar Departamento{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Eliminar Departamento</h1>
+
+<p>¿Estás seguro de que deseas eliminar "{{ object.nombre }}"?</p>
+
+<form method="post" class="mt-4">
+    {% csrf_token %}
+    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Sí, eliminar</button>
+    <a href="{% url 'departamentoAPP:departamento_list' %}" class="ml-4 text-gray-600 hover:underline">Cancelar</a>
+</form>
+{% endblock %}
