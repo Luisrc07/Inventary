@@ -37,19 +37,28 @@
                     Gestión
                 </p>
 
-                <a href="#" class="flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150">
+                {% url 'core:Home' as hom %}
+                <a href="{{hom}}" class=" {% if request.path == hom %} flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md {% else %} flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
                     <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
                 </a>
 
-                <a href="#" class="flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md">
+                {% url 'Departamento' as dep %}
+                <a href="{{dep}}" class="{% if request.path == dep %} flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md {% else %} flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
+                    <i class="fas fa-boxes mr-3"></i>
+                    Departamento
+                </a>
+                
+                {% url 'inventarioAPP:producto_list' as prod   %}
+                <a href="{{prod}}" class=" {% if request.path == prod %} flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md  {% else %} flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
                     <i class="fas fa-boxes mr-3"></i>
                     Productos
                 </a>
 
-                <a href="#" class="flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150">
-                    <i class="fas fa-exchange-alt mr-3"></i>
-                    Movimientos
-                </a>
+                {% url 'Movimiento' as mov %}
+                <a href="{{ mov }}" class=" {% if request.path == mov %} flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md {% else %} flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
+                <i class="fas fa-exchange-alt mr-3"></i>
+                Movimientos
+            </a>
 
                 <a href="#" class="flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150">
                     <i class="fas fa-truck mr-3"></i>
@@ -92,7 +101,7 @@
             </button>
             
             <div class="p-6">
-                <h2 class="text-3xl font-semibold text-gray-800 mb-6">Contenido Principal</h2>
+                
                 
                 {% block content %}
                 
