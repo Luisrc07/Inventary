@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core',
     'inventarioAPP',
+    'departamentoAPP',
+    'movimientoAPP',
     'tailwind',
     'theme',
 ]

@@ -42,7 +42,7 @@
                     <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
                 </a>
 
-                {% url 'Departamento' as dep %}
+                {% url 'departamentoAPP:departamento_list' as dep %}
                 <a href="{{dep}}" class="{% if request.path == dep %} flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md {% else %} flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
                     <i class="fas fa-boxes mr-3"></i>
                     Departamento
@@ -54,7 +54,7 @@
                     Productos
                 </a>
 
-                {% url 'Movimiento' as mov %}
+                {% url 'movimientoAPP:mov_list' as mov %}
                 <a href="{{ mov }}" class=" {% if request.path == mov %} flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md {% else %} flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
                 <i class="fas fa-exchange-alt mr-3"></i>
                 Movimientos
