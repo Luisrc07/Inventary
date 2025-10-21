@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
 
-{% block tittle %}{% if object %}Editar Departamento{% else %}Crear Departamento{% endif %}{% endblock %}
+{% block tittle %}{% if object %}Editar Encargado{% else %}Crear Encargado{% endif %}{% endblock %}
 
 {% block content %}
 <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
-    {% if object %}Editar{% else %}Crear{% endif %} Departamento
+    {% if object %}Editar{% else %}Crear{% endif %} Encargado
 </h1>
 
+<!-- Contenedor Centrado y con Sombra -->
 <div class="bg-white p-8 rounded-xl shadow-lg max-w-xl mx-auto">
     
     <form method="post" class="space-y-6">
@@ -18,37 +19,66 @@
                     {{ field.label }}
                 </label>
                 
+                <!-- Si el campo NO es un checkbox, renderizamos nuestro input estilizado -->
                 {% if field.field.widget.input_type != 'checkbox' %}
-                    {{ field }}
+                    <!-- Renderizamos el campo. Esto funciona para <input>, <textarea>, y <select> -->
+                    <!-- NOTA: Para campos <select> (como el ForeignKey), es posible que necesites
+                         un widget personalizado en forms.py para aplicar las clases de Tailwind
+                         correctamente, ya que Django renderiza el <select> sin clases por defecto.
+                         Aquí aplicamos las clases directamente al input si lo es.
+                    -->
                     
-                    <input type="{{ field.field.widget.input_type }}" 
-                           name="{{ field.name }}" 
-                           id="{{ field.id_for_label }}" 
-                           value="{{ field.value|default:'' }}"
-                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                           {% if field.field.required %}required{% endif %}>
+                    {% if field.field.widget.template_name == 'django/forms/widgets/textarea.html' %}
+                        <!-- Caso específico para <textarea> (como si tuvieras uno aquí) -->
+                        <textarea name="{{ field.name }}" 
+                                  id="{{ field.id_for_label }}" 
+                                  rows="3"
+                                  class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900" 
+                                  {% if field.field.required %}required{% endif %}>{{ field.value|default:'' }}</textarea>
+                    {% elif field.field.widget.input_type == 'select' %}
+                        <!-- Renderiza el Select de Django (si Encargado tuviera un FK) -->
+                        {{ field }}
+                    {% else %}
+                        <!-- Campo genérico de texto, número, email, etc. -->
+                        <input type="{{ field.field.widget.input_type }}" 
+                               name="{{ field.name }}" 
+                               id="{{ field.id_for_label }}" 
+                               value="{{ field.value|default:'' }}"
+                               class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900"
+                               {% if field.field.required %}required{% endif %}>
+                    {% endif %}
+
                     
-                    {% elif field.field.widget.input_type == 'checkbox' %}
+                {% elif field.field.widget.input_type == 'checkbox' %}
+                    <!-- Caso de checkbox (para el campo 'activo') -->
                     <div class="flex items-center mt-2">
+                        <!-- El input de checkbox lo renderizamos directamente con su widget de Django -->
                         {{ field }}
                         <span class="ml-2 text-sm text-gray-700">{{ field.label }}</span>
                     </div>
+                {% else %}
+                     <!-- Fallback para otros tipos de campos que no manejamos específicamente -->
+                     {{ field }}
                 {% endif %}
                 
+                <!-- Mostrar errores de campo específicos -->
                 {% if field.errors %}
                     <p class="mt-1 text-sm text-red-600">{{ field.errors.as_text }}</p>
                 {% endif %}
             </div>
         {% endfor %}
 
+        <!-- Bloque de Botones de Acción -->
         <div class="flex justify-start pt-4 border-t mt-6">
+            <!-- Botón Guardar -->
             <button type="submit" 
                     class="bg-indigo-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md">
                 <i class="fas fa-save mr-2"></i>
-                Guardar {{ object|yesno:"Cambios,Departamento" }}
+                Guardar {{ object|yesno:"Cambios,Encargado" }}
             </button>
             
-            {% url 'departamentoAPP:departamento_list' as cancel_url %}
+            <!-- Botón Cancelar -->
+            {% url 'departamentoAPP:encargado_list' as cancel_url %}
             <a href="{{ cancel_url }}" 
                class="ml-4 text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">
                 <i class="fas fa-times mr-2"></i>
