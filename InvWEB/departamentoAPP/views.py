@@ -5,7 +5,7 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from departamentoAPP.models import Departamento, Encargado
 # Create your views here.
-
+from departamentoAPP.forms import EncargadoForm, DepartamentoForm
  #Encargado
 class EncargadoListview(ListView):
     model = Encargado
@@ -15,13 +15,13 @@ class EncargadoListview(ListView):
 class EncargadoCreateView(CreateView):
     model = Encargado
     template_name = 'encargado/form.html' # CORREGIDO
-    fields = ['nombres', 'apellidos', 'telefono', 'email', 'activo']
+    form_class = EncargadoForm
     success_url = reverse_lazy('departamentoAPP:encargado_list')
 
 class EncargadoUpdateView(UpdateView):
     model = Encargado
     template_name = 'encargado/form.html' # CORREGIDO
-    fields = ['nombres', 'apellidos', 'telefono', 'email', 'activo']
+    form_class = EncargadoForm
     success_url = reverse_lazy('departamentoAPP:encargado_list')
 
 class EncargadoDeleteView(DeleteView):
@@ -40,13 +40,13 @@ class DepartamentoListView(ListView):
 class DepartamentoCreateView(CreateView):
     model = Departamento
     template_name = 'departamento/form.html' # CORREGIDO
-    fields = ['nombre', 'descripcion', 'encargado', 'activo']
+    form_class = DepartamentoForm
     success_url = reverse_lazy('departamentoAPP:departamento_list')
 
 class DepartamentoUpdateView(UpdateView):
     model = Departamento
     template_name = 'departamento/form.html' # CORREGIDO
-    fields = ['nombre', 'descripcion', 'encargado', 'activo']
+    form_class = DepartamentoForm
     success_url = reverse_lazy('departamentoAPP:departamento_list')
 
 class DepartamentoDeleteView(DeleteView):

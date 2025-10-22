@@ -1,15 +1,44 @@
-{% extends 'core/base.html' %}
+{% extends 'base.html' %} 
 
-{% block tittle %}Eliminar Departamento{% endblock %}
+{% block tittle %}Eliminar Encargado{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">Eliminar Departamento</h1>
+<!-- Contenedor Centrado y con Sombra -->
+<div class="bg-white p-8 rounded-xl shadow-lg max-w-lg mx-auto">
 
-<p>¿Estás seguro de que deseas eliminar "{{ object.nombre }}"?</p>
+    <h1 class="text-3xl font-bold text-gray-800 mb-4 border-b pb-2">
+        Confirmar Eliminación
+    </h1>
 
-<form method="post" class="mt-4">
-    {% csrf_token %}
-    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Sí, eliminar</button>
-    <a href="{% url 'departamentoAPP:departamento_list' %}" class="ml-4 text-gray-600 hover:underline">Cancelar</a>
-</form>
+    <p class="text-lg text-gray-700 mb-6">
+        ¿Estás seguro de que deseas eliminar al encargado: 
+        <strong class="text-red-600">"{{ object.nombre }}"</strong>?
+    </p>
+
+    <!-- Advertencia de Dependencias -->
+    <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 mb-6 rounded-md" role="alert">
+        <p class="font-bold text-sm">¡Atención!</p>
+        <p class="text-sm">Si eliminas a este encargado, cualquier departamento que dependa de él quedará sin encargado asignado.</p>
+    </div>
+
+    <form method="post" class="flex justify-start space-x-4">
+        {% csrf_token %}
+        
+        <!-- Botón de Confirmación (Rojo) -->
+        <button type="submit" 
+                class="bg-red-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-red-700 transition duration-150 shadow-md flex items-center">
+            <i class="fas fa-trash-alt mr-2"></i>
+            Sí, Eliminar Permanentemente
+        </button>
+        
+        <!-- Botón de Cancelar -->
+        {% url 'departamentoAPP:departamento_list' as cancel_url %}
+        <a href="{{ cancel_url }}" 
+           class="text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">
+            <i class="fas fa-times mr-2"></i>
+            Cancelar
+        </a>
+    </form>
+    
+</div>
 {% endblock %}

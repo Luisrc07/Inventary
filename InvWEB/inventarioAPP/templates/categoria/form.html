@@ -1,10 +1,10 @@
 {% extends 'base.html' %} 
 
-{% block tittle %}{% if object %}Editar Encargado{% else %}Crear Encargado{% endif %}{% endblock %}
+{% block tittle %}{% if object %}Editar Categoría{% else %}Crear Categoría{% endif %}{% endblock %}
 
 {% block content %}
 <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
-    {% if object %}Editar{% else %}Crear{% endif %} Encargado
+    {% if object %}Editar{% else %}Crear{% endif %} Categoría
 </h1>
 
 <div class="bg-white p-8 rounded-xl shadow-lg max-w-xl mx-auto text-black">
@@ -18,7 +18,9 @@
                     {{ field.label }}
                 </label>
                 
-                {{ field }} {% if field.errors %}
+                {{ field }} 
+                
+                {% if field.errors %}
                     <p class="mt-1 text-sm text-red-600">{{ field.errors.as_text }}</p>
                 {% endif %}
             </div>
@@ -28,10 +30,10 @@
             <button type="submit" 
                     class="bg-indigo-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md">
                 <i class="fas fa-save mr-2"></i>
-                Guardar {{ object|yesno:"Cambios,Encargado" }}
+                Guardar {{ object|yesno:"Cambios,Categoría" }}
             </button>
             
-            {% url 'departamentoAPP:encargado_list' as cancel_url %}
+            {% url 'inventarioAPP:categoria_list' as cancel_url %}
             <a href="{{ cancel_url }}" 
                class="ml-4 text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">
                 <i class="fas fa-times mr-2"></i>

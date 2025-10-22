@@ -1,6 +1,6 @@
 import uuid
 from django.db import models
-
+from django.core.validators import MinValueValidator
 
 class Categoria(models.Model):
     """
@@ -10,7 +10,7 @@ class Categoria(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     nombre = models.CharField(max_length=100, unique=True)
     descripcion = models.TextField(blank=True, null=True)
-    activo = models.BooleanField(default=True)
+    
 
     class Meta:
         verbose_name = "Categoría"
@@ -30,7 +30,7 @@ class Producto(models.Model):
     sku = models.CharField(max_length=50, unique=True)
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, related_name='productos')
     descripcion = models.TextField(blank=True, null=True)
-    unidad_medida = models.CharField(max_length=50, default='unidad')
+    unidad_medida = models.DecimalField(max_digits=10, decimal_places=2, default=1,validators=[MinValueValidator(0.01, message="La unidad de medida debe ser mayor que 0.")],verbose_name="Cantidad por Unidad")
     activo = models.BooleanField(default=True)
 
     class Meta:
