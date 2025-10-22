@@ -20,8 +20,18 @@ class ProductoForm(forms.ModelForm):
         model= Producto
         fields= ['nombre','sku','categoria','descripcion','unidad_medida']
         widgets= {
-            'nombre': TextInput(attrs={'class': tailwind_class}),
-            'sku': TextInput(attrs={'class': tailwind_class}),
-            'categoria': Select(attrs={'class': tailwind_class}),
-            'descripcion': Textarea(attrs={'class': tailwind_class}),'unidad_medida': NumberInput(attrs={'class': tailwind_class}),
+            'nombre': TextInput(attrs={'class': tailwind_class, 'required': 'True'}),
+            'sku': TextInput(attrs={'class': tailwind_class,'required': 'True'}),
+            'categoria': Select(attrs={'class': tailwind_class, 'required': 'True'}),
+            'descripcion': Textarea(attrs={'class': tailwind_class, }),
+            'unidad_medida': NumberInput(attrs={'class': tailwind_class, 'step': 'any', 'min': '0.01', 'required': 'True'}),
         }
+
+
+def clean_sku(self):
+    sku_value = self.cleaned_data.get('sku')
+
+    if sku_value:
+        return sku_value.upper()
+    
+    return sku_value

@@ -1,89 +1,53 @@
 {% extends 'base.html' %} 
-{% load static %}
 
-{% block tittle %}
-    Inventario | Productos
-{% endblock %}
+{% block tittle %}Eliminar Categoria{% endblock %}
 
 {% block content %}
-    <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
-        Catálogo de Productos
+<div class="bg-white p-8 rounded-xl shadow-lg max-w-lg mx-auto">
+
+    <h1 class="text-3xl font-bold text-gray-800 mb-4 border-b pb-2">
+        Confirmar Eliminación
     </h1>
 
-    <div class="bg-white p-6 rounded-xl shadow-lg">
-        
-        <div class="flex justify-end mb-4">
-            {% url 'inventario:producto_create' as create_url %}
-            <a href="{{ create_url }}" 
-               class="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md">
-                <i class="fas fa-plus mr-2"></i> 
-                Crear Nuevo Producto
-            </a>
-        </div>
-        
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Nombre
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            SKU
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Categoría
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Stock Mínimo
-                        </th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Acciones
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    
-                    {% for producto in productos %}
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {{ producto.nombre }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ producto.sku|default:"N/A" }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ producto.categoria.nombre|default:"Sin Categoría" }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ producto.stock_minimo_global }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                {% url 'inventario:producto_update' pk=producto.pk as update_url %}
-                                <a href="{{ update_url }}" 
-                                   class="text-indigo-600 hover:text-indigo-900 mr-3">
-                                    <i class="fas fa-edit"></i> Editar
-                                </a>
-                                
-                                {% url 'inventario:producto_delete' pk=producto.pk as delete_url %}
-                                <a href="{{ delete_url }}" 
-                                   class="text-red-600 hover:text-red-900">
-                                    <i class="fas fa-trash-alt"></i> Eliminar
-                                </a>
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-gray-500 text-lg italic">
-                                No se encontraron productos. ¡Crea el primero!
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    
-                </tbody>
-            </table>
-        </div>
-        
+    <p class="text-lg text-gray-700 mb-6">
+        ¿Estás seguro de que deseas eliminar la Categoria: 
+        <strong class="text-red-600">"{{ object.nombre }} "</strong>?
+    </p>
+
+    {% if product_count > 0 %}  
+    <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 mb-6 rounded-md" role="alert">
+        <p class="font-bold text-sm">¡Atención! ({{ product_count }} productos asociados)</p>
+        <p class="text-sm">
+            <strong class="font-semibold">No puedes eliminar esta categoría.</strong> 
+            Primero debes eliminar o reasignar los <strong class="text-yellow-900">{{ product_count }}</strong> producto(s) asociado(s).
+        </p>
     </div>
+    {% endif %}
+
+    <form method="post" class="flex justify-start space-x-4">
+        {% csrf_token %}
+        
+        {% if product_count == 0 %}
+        <button type="submit" 
+                class="bg-red-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-red-700 transition duration-150 shadow-md flex items-center">
+            <i class="fas fa-trash-alt mr-2"></i>
+            Sí, Eliminar Permanentemente
+        </button>
+        {% else %}
+        <button type="button" disabled
+                class="bg-gray-400 text-white font-semibold px-6 py-2 rounded-lg cursor-not-allowed shadow-md flex items-center">
+            <i class="fas fa-ban mr-2"></i>
+            Eliminación Bloqueada
+        </button>
+        {% endif %}
+        
+        {% url 'inventarioAPP:categoria_list' as cancel_url %}
+        <a href="{{ cancel_url }}" 
+           class="text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">
+            <i class="fas fa-times mr-2"></i>
+            Cancelar
+        </a>
+    </form>
     
+</div>
 {% endblock %}
