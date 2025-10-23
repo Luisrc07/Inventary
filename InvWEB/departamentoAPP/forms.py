@@ -42,6 +42,6 @@ class DepartamentoForm(forms.ModelForm):
         fields = ['nombre','descripcion','encargado','activo']
         widgets= { 
         'nombre':TextInput(attrs={'class':tailwind_class}),
-        'descipcion':Textarea(attrs={'class':tailwind_class}),
+        'descripcion': Textarea(attrs={'class': tailwind_class, 'rows':2}),
         'encargado':Select(attrs={'class':tailwind_class}),
         }           
