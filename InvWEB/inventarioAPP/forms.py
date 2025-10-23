@@ -21,17 +21,23 @@ class ProductoForm(forms.ModelForm):
         fields= ['nombre','sku','categoria','descripcion','unidad_medida']
         widgets= {
             'nombre': TextInput(attrs={'class': tailwind_class, 'required': 'True'}),
-            'sku': TextInput(attrs={'class': tailwind_class,'required': 'True'}),
+            'sku': TextInput(attrs={'class': tailwind_class,'required': 'True', 'style': 'text-transform: uppercase;'}),
             'categoria': Select(attrs={'class': tailwind_class, 'required': 'True'}),
             'descripcion': Textarea(attrs={'class': tailwind_class, }),
             'unidad_medida': NumberInput(attrs={'class': tailwind_class, 'step': 'any', 'min': '0.01', 'required': 'True'}),
         }
+    def clean_sku(self): 
+        """
+        Garantiza que el valor se convierta a mayúsculas antes de ser
+        asignado a la instancia del modelo.
+        """
+        # 1. Obtiene el valor enviado por el usuario
+        valor = self.cleaned_data.get('sku')
+        
+        # 2. Verifica que tenga un valor y lo convierte a mayúsculas
+        if valor:
+            return valor.upper()
+        
+        # 3. Retorna el valor (si es None o vacío, lo retorna como está)
+        return valor
 
-
-def clean_sku(self):
-    sku_value = self.cleaned_data.get('sku')
-
-    if sku_value:
-        return sku_value.upper()
-    
-    return sku_value
