@@ -1,5 +1,7 @@
+# En movimientoAPP/modelsmov.py
+
 import uuid
-from django.db import models
+from django.db import models, transaction  # ¡Importante!
 from departamentoAPP.models import Departamento
 from inventarioAPP.models import Producto
 from proveedorAPP.models import Proveedor
@@ -31,56 +33,80 @@ class Movimiento(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        Lógica de actualización de stock **directamente al guardar el movimiento**.
+        Lógica de actualización de stock transaccional y segura.
         """
-        almacen_principal = Departamento.objects.filter(nombre__iexact='Almacén Principal').first()
+        
+        # 1. Solo ejecutar la lógica de stock si es un MOVIMIENTO NUEVO.
+        # Esto evita que se duplique el stock si alguien edita un movimiento.
+        if not self._state.adding:
+            super().save(*args, **kwargs) # Solo guarda los cambios (ej. una 'observación')
+            return # Y no ejecuta la lógica de stock de abajo
 
-        # Ajustar departamentos según tipo
-        if self.tipo == 'ENTRADA':
-            self.departamento_origen = None
-            if almacen_principal and not self.departamento_destino:
-                self.departamento_destino = almacen_principal
+        # 2. Envolver toda la lógica en una transacción atómica
+        # Si algo falla (ej. no hay stock), NADA se guarda. Ni el stock NI el movimiento.
+        try:
+            with transaction.atomic():
+                
+                # --- Validaciones y Lógica de Departamentos ---
+                if self.tipo == 'ENTRADA':
+                    if not self.departamento_destino:
+                        # Intenta asignar al almacén principal por defecto
+                        almacen_principal = Departamento.objects.filter(nombre__iexact='Almacén Principal').first()
+                        if almacen_principal:
+                            self.departamento_destino = almacen_principal
+                        else:
+                            raise ValueError("La ENTRADA debe tener un departamento de destino.")
+                    if not self.proveedor:
+                        raise ValueError("La ENTRADA debe tener un proveedor.")
+                    self.departamento_origen = None # Aseguramos que sea nulo
 
-        elif self.tipo == 'SALIDA':
-            self.departamento_destino = None
-            if not self.departamento_origen:
-                raise ValueError("Debe seleccionar un departamento de origen para SALIDA.")
+                elif self.tipo == 'SALIDA':
+                    if not self.departamento_origen:
+                        raise ValueError("La SALIDA debe tener un departamento de origen.")
+                    self.departamento_destino = None # Aseguramos que sea nulo
 
-        elif self.tipo == 'TRANSFERENCIA':
-            if not self.departamento_origen or not self.departamento_destino:
-                raise ValueError("Debe seleccionar origen y destino para TRANSFERENCIA.")
+                elif self.tipo == 'TRANSFERENCIA':
+                    if not self.departamento_origen or not self.departamento_destino:
+                        raise ValueError("La TRANSFERENCIA debe tener origen y destino.")
+                    if self.departamento_origen == self.departamento_destino:
+                        raise ValueError("El origen y destino no pueden ser el mismo.")
+                
+                # --- Actualización de Stock (Lógica Central) ---
+                
+                # A. Restar de Origen (si aplica)
+                if self.tipo in ['SALIDA', 'TRANSFERENCIA']:
+                    stock_origen, created = StockActual.objects.get_or_create(
+                        producto=self.producto,
+                        departamento=self.departamento_origen,
+                        defaults={'cantidad': 0}
+                    )
+                    
+                    if stock_origen.cantidad < self.cantidad:
+                        raise ValueError(f"No hay suficiente stock de '{self.producto.nombre}' en '{self.departamento_origen.nombre}'.")
+                    
+                    stock_origen.cantidad -= self.cantidad
+                    stock_origen.save()
 
-        super().save(*args, **kwargs)  # Guardar movimiento primero
+                # B. Sumar a Destino (si aplica)
+                if self.tipo in ['ENTRADA', 'TRANSFERENCIA']:
+                    stock_destino, created = StockActual.objects.get_or_create(
+                        producto=self.producto,
+                        departamento=self.departamento_destino,
+                        defaults={'cantidad': 0}
+                    )
+                    stock_destino.cantidad += self.cantidad
+                    stock_destino.save()
 
-        # Actualizar stock
-        stock_destino, created = StockActual.objects.get_or_create(
-            producto=self.producto,
-            departamento=self.departamento_destino,
-            defaults={'cantidad': 0}
-        )
-        stock_origen, created = StockActual.objects.get_or_create(
-            producto=self.producto,
-            departamento=self.departamento_origen,
-            defaults={'cantidad': 0}
-        )
+                # 3. Guardar el movimiento (SOLO si toda la lógica de stock fue exitosa)
+                super().save(*args, **kwargs)
 
-        if self.tipo == 'ENTRADA':
-            stock_destino.cantidad += self.cantidad
-            stock_destino.save()
-
-        elif self.tipo == 'SALIDA':
-            if stock_origen.cantidad < self.cantidad:
-                raise ValueError("No hay suficiente stock para realizar la SALIDA.")
-            stock_origen.cantidad -= self.cantidad
-            stock_origen.save()
-
-        elif self.tipo == 'TRANSFERENCIA':
-            if stock_origen.cantidad < self.cantidad:
-                raise ValueError("No hay suficiente stock para realizar la TRANSFERENCIA.")
-            stock_origen.cantidad -= self.cantidad
-            stock_origen.save()
-            stock_destino.cantidad += self.cantidad
-            stock_destino.save()
+        except ValueError as e:
+            # Si se lanzó un ValueError (ej. "No hay stock"), lo relanzamos
+            # para que el admin de Django o el Serializer lo muestre al usuario.
+            raise e
+        except Exception as e:
+            # Capturar cualquier otro error inesperado
+            raise ValueError(f"Error inesperado al procesar el movimiento: {str(e)}")
 
 
 class StockActual(models.Model):
