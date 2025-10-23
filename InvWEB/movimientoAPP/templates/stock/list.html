@@ -1,70 +1,37 @@
-{% extends 'base.html' %}  {# Hereda el layout principal con sidebar #}
+{% extends 'base.html' %} 
 
-{% block tittle %}Stock{% endblock %}
+{% block tittle %}Stock Actual por Departamento{% endblock %}
 
 {% block content %}
-<h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Stock</h1>
+<h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Reporte de Stock Actual</h1>
 
 <div class="bg-white p-6 rounded-xl shadow-lg">
-    <div class="flex justify-end mb-4">
-
-        {% url 'movimientoAPP:stock_crear' as create_url %}
-        <a href="{{ create_url }}" class="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md">
-            <i class="fas fa-plus mr-2"></i> 
-            Crear Stock
-        </a>
-
-    </div>
     
- <div class="overflow-x-auto">
+    <div class="overflow-x-auto">
     <table class="min-w-full bg-white shadow rounded-lg overflow-hidden">
-    
-    <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RIF</th>
-                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Telefono</th>
-                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Direccion</th>
-                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Activo</th>
-                    
-                </tr>
-            </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                    {% for proveedor in proveedores %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ proveedor.nombre }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ proveedor.rif }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">{{ proveedor.telefono }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">{{ proveedor.email }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">{{ proveedor.direccion }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
-                            {% if proveedor.activo %}
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Sí</span>
-                            {% else %}
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">No</span>
-                            {% endif %}
-                        </td>
-
-                            
-                    
-                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                            {% url 'proveedorAPP:prov_editar' pk=proveedor.pk as update_url %}
-                            <a href="{{ update_url }}" 
-                            class="text-indigo-600 hover:text-indigo-900 mr-3">
-                                <i class="fas fa-edit"></i>Editar
-                            </a> |
-
-                            {% url 'proveedorAPP:prov_eliminar' pk=proveedor.pk as delete_url%}
-                            <a href="{{ delete_url }}" class="text-red-600 hover:text-red-900">                         
-                                <i class="fas fa-trash-alt"></i>Eliminar
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    </tbody>
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad en Stock</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for item in stockactual %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.producto.nombre }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.producto.sku }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">{{ item.departamento.nombre }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-center text-lg font-bold text-indigo-600">{{ item.cantidad }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="px-6 py-4 text-center text-gray-500">No hay items con stock.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
-
 </div>
 </div>
 {% endblock %}

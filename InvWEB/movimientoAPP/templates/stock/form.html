@@ -1,10 +1,10 @@
 {% extends 'base.html' %} 
 
-{% block tittle %}{% if object %}Editar Proveedor{% else %}Crear Proveedor{% endif %}{% endblock %}
+{% block tittle %}{% if object %}Editar Stock{% else %}Crear Stock{% endif %}{% endblock %}
 
 {% block content %}
 <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
-    {% if object %}Editar{% else %}Crear{% endif %} Proveedor
+    {% if object %}Editar{% else %}Crear{% endif %} Stock
 </h1>
 
 <div class="bg-white p-8 rounded-xl shadow-lg max-w-xl mx-auto text-black">
@@ -33,7 +33,7 @@
                 Guardar {{ object|yesno:"Cambios,Producto" }}
             </button>
             
-            {% url 'proveedorAPP:prov_list' as cancel_url %}
+            {% url 'movimientoAPP:stock_list' as cancel_url %}
             <a href="{{ cancel_url }}" 
                class="ml-4 text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">
                 <i class="fas fa-times mr-2"></i>
