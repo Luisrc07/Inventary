@@ -30,19 +30,30 @@
                 {% if field.errors %}
                     <p class="mt-1 text-sm text-red-600">{{ field.errors.as_text }}</p>
                 {% endif %}
-            </div>
+
+                {% if field.name == 'cantidad' %}
+                <div id="calculo_wrapper" class="p-3 bg-gray-50 rounded-md mt-2 text-sm" style="display: none;">
+                    <span class="font-medium text-gray-600">Cantidad por Paquete: </span>
+                    <span id="unidad_display" class="font-bold text-indigo-600">...</span>
+                    <br>
+                    <span class="font-medium text-gray-600">Total de Unidades a Mover: </span>
+                    <span id="total_display" class="font-bold text-indigo-600">...</span>
+                </div>
+                {% endif %}
+                </div>
         {% endfor %}
 
-        <div class="flex justify-start pt-4 border-t mt-6">
+        {% url 'movimientoAPP:movimiento_list' as cancel_url %}
+
+        <div class="flex justify-start items-center pt-6 border-t mt-6 space-x-4">
             <button type="submit" 
-                    class="bg-indigo-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md">
+                    class="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md">
                 <i class="fas fa-save mr-2"></i>
-                Guardar
+                Guardar Movimiento
             </button>
             
-            {% url 'movimientoAPP:movimiento_list' as cancel_url %}
             <a href="{{ cancel_url }}" 
-               class="ml-4 text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">
+               class="text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">
                 <i class="fas fa-times mr-2"></i>
                 Cancelar
             </a>
@@ -52,21 +63,19 @@
 </div>
 
 <script>
+const productosData = JSON.parse('{{ productos_data_json|safe }}');
+
 document.addEventListener('DOMContentLoaded', function() {
+    
+    // --- Lógica que YA TENÍAS (para mostrar/ocultar campos) ---
     const tipoField = document.getElementById('id_tipo');
     const proveedorWrapper = document.getElementById('field_proveedor_wrapper');
     const origenWrapper = document.getElementById('field_departamento_origen_wrapper');
     const destinoWrapper = document.getElementById('field_departamento_destino_wrapper');
     
-    // Ocultar todos los campos condicionales al inicio
-    proveedorWrapper.style.display = 'none';
-    origenWrapper.style.display = 'none';
-    destinoWrapper.style.display = 'none';
-
+    // (Esta función se queda igual)
     function toggleFields() {
         const tipo = tipoField.value;
-
-        // Ocultar todos primero
         proveedorWrapper.style.display = 'none';
         origenWrapper.style.display = 'none';
         destinoWrapper.style.display = 'none';
@@ -81,12 +90,49 @@ document.addEventListener('DOMContentLoaded', function() {
             destinoWrapper.style.display = 'block';
         }
     }
+    toggleFields(); // Ejecutar al cargar
+    tipoField.addEventListener('change', toggleFields); // Ejecutar al cambiar
+    
 
-    // Ejecutar al cargar la página (para el caso de edición o error)
-    toggleFields();
+    // --- // NUEVO: Lógica para calcular el total (se añade aquí) ---
+    
+    // 1. Obtener los elementos del DOM
+    const productoField = document.getElementById('id_producto');
+    const cantidadField = document.getElementById('id_cantidad');
+    const unidadDisplay = document.getElementById('unidad_display');
+    const totalDisplay = document.getElementById('total_display');
+    const calculoWrapper = document.getElementById('calculo_wrapper');
 
-    // Ejecutar al cambiar el tipo
-    tipoField.addEventListener('change', toggleFields);
+    // 2. Función de cálculo
+    function calcularTotal() {
+        const productoId = productoField.value;
+        const cantidad = parseFloat(cantidadField.value) || 0;
+        
+        // Si no hay producto seleccionado o no se encuentra, ocultar
+        if (!productoId || !productosData[productoId]) {
+            if(calculoWrapper) calculoWrapper.style.display = 'none';
+            return;
+        }
+
+        // Si hay producto, mostrar y calcular
+        if(calculoWrapper) calculoWrapper.style.display = 'block';
+        
+        const unidadMedida = parseFloat(productosData[productoId]);
+        // .toFixed(2) es para mostrar 2 decimales
+        const totalUnidades = (cantidad * unidadMedida).toFixed(2); 
+
+        unidadDisplay.textContent = `${unidadMedida} (unidades)`;
+        totalDisplay.textContent = `${totalUnidades} (unidades totales)`;
+    }
+
+    // 3. Asignar los listeners
+    productoField.addEventListener('change', calcularTotal);
+    cantidadField.addEventListener('input', calcularTotal);
+    
+    // 4. Ejecutar al cargar (por si el form tiene datos previos)
+    calcularTotal();
+    
+    // --- // FIN DE LA SECCIÓN NUEVA SCRIPT ---
 });
 </script>
 

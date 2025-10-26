@@ -29,6 +29,9 @@ class MovimientoForm(forms.ModelForm):
             'departamento_destino': Select(attrs={'class': tailwind_class, 'id': 'id_destino_wrapper'}),
             'observaciones': Textarea(attrs={'class': tailwind_class, 'rows': 3}),
         }
+        labels = {
+            'cantidad': 'Cantidad de Paquetes (Ej: Cajas, Bolsas, etc.)'
+        }
 
     def __init__(self, *args, **kwargs):
         """

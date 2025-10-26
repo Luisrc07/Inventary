@@ -112,7 +112,7 @@
                                 Movimientos
                             </a>
 
-                            {% url 'movimientoAPP:stock_list' as stock_list %}
+                            {% url 'movimientoAPP:stock_list_grouped' as stock_list %}
                             <a href="{{ stock_list }}" 
                                class="{% if request.path == stock_list %} block px-4 p-2 rounded-lg bg-indigo-600 text-white shadow-md {% else %} block px-4 py-1 rounded text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
                                 Stocks

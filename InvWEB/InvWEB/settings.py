@@ -83,8 +83,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'invweb_db',
-        'USER': 'invweb_user',
-        'PASSWORD': 'inventary12345',
+        'USER': 'postgres',
+        'PASSWORD': '12345',
         'HOST': 'localhost',
         'PORT': '5432',
     }

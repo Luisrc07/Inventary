@@ -1,13 +1,32 @@
 # En movimientoAPP/views.py
-
+import json
+from inventarioAPP.models import Producto
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView
 from .models import Movimiento, StockActual
 from .forms import MovimientoForm # ¡Usamos el formulario correcto!
 from django.contrib import messages
 from django.forms import ValidationError
-
+from departamentoAPP.models import Departamento
 # --- VISTAS DE MOVIMIENTO ---
+
+class StockGroupedListview(ListView):
+    """
+    Esta vista agrupa el stock por departamento.
+    """
+    model = Departamento # ¡Cambiamos el modelo base!
+    template_name = 'stock/list_grouped.html' # Nueva plantilla
+    context_object_name = 'departamentos'
+    
+    def get_queryset(self):
+        # Obtenemos todos los departamentos y precargamos
+        # su encargado y sus items de stock (con el producto)
+        # para evitar N+1 queries en la plantilla.
+        return Departamento.objects.filter(activo=True).prefetch_related(
+            'encargado', 
+            'stock_items__producto' # 'stock_items' es el related_name
+        )
+    
 
 class MovimientoListview(ListView):
     model = Movimiento
@@ -21,6 +40,18 @@ class MovimientoCreateView(CreateView):
     form_class = MovimientoForm
     success_url = reverse_lazy('movimientoAPP:movimiento_list')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # ¡NUEVO! Pasamos los datos de productos al template como JSON
+        productos_data = {
+            str(p.id): str(p.unidad_medida)
+            for p in Producto.objects.filter(activo=True)
+        }
+        context['productos_data_json'] = json.dumps(productos_data)
+        
+        return context
+    
     def form_valid(self, form):
         """
         Aquí está la magia.

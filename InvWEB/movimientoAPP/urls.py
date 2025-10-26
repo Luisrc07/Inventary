@@ -10,7 +10,6 @@ urlpatterns = [
    
 
     #url stock
-    path('stock/', views.StockListview.as_view(),name= 'stock_list'),
-    
+path('stock/', views.StockGroupedListview.as_view(), name='stock_list_grouped'),    
     
 ]
