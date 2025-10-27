@@ -8,7 +8,16 @@ from .forms import MovimientoForm # ¡Usamos el formulario correcto!
 from django.contrib import messages
 from django.forms import ValidationError
 from departamentoAPP.models import Departamento
+from django.utils import timezone
+from departamentoAPP.models import Departamento
 # --- VISTAS DE MOVIMIENTO ---
+
+# --- IMPORTACIONES PARA PDF! ---
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from django.shortcuts import get_object_or_404
+from weasyprint import HTML
+# -------------------------------------
 
 class StockGroupedListview(ListView):
     """
@@ -106,3 +115,52 @@ class StockListview(ListView):
 
 # NO MÁS VISTAS PARA STOCK. 
 # StockCreateView, StockUpdateView y StockDeleteView DEBEN SER ELIMINADAS.
+
+# --- VISTA PARA GENERAR PDF DE STOCK POR DEPARTAMENTO ---
+
+def generar_reporte_stock_pdf(request, pk):
+    """
+    Genera un reporte en PDF del stock actual para un departamento específico.
+    """
+    from .models import StockActual # Importación local para evitar circular, o ponla arriba.
+    from departamentoAPP.models import Departamento # Idem.
+
+    # 1. Obtener el departamento y su stock (solo con cantidad > 0)
+    try:
+        depto = get_object_or_404(
+            Departamento.objects.prefetch_related(
+                'encargado', 
+                'stock_items__producto'
+            ), 
+            pk=pk
+        )
+    except:
+        # Nota: Django ya maneja el 404 si no encuentra por pk,
+        # pero es bueno tener un bloque try/except si esperas más errores.
+        return HttpResponse("Departamento no encontrado.", status=404)
+
+    # Filtramos los items para solo mostrar los que tienen stock positivo
+    stock_items = [
+        item for item in depto.stock_items.all() if item.cantidad > 0
+    ]
+
+    # 2. Definir el contexto para la plantilla del PDF
+    context = {
+        'depto': depto,
+        'stock_items': stock_items,
+        'fecha_actual': timezone.now(), 
+    }
+    
+    # 3. Renderizar la plantilla HTML a un string
+    html_string = render_to_string('stock/reporte_pdf_template.html', context)
+
+    # 4. Generar el PDF usando WeasyPrint
+    # build_absolute_uri() es importante para que WeasyPrint pueda cargar cualquier CSS.
+    html = HTML(string=html_string, base_url=request.build_absolute_uri())
+    pdf = html.write_pdf()
+
+    # 5. Devolver la respuesta HTTP con el PDF
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="reporte_stock_{depto.nombre}.pdf"'
+    
+    return response
