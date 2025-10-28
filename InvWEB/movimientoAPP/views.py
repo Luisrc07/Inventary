@@ -42,7 +42,7 @@ class MovimientoListview(ListView):
     model = Movimiento
     template_name = 'movimiento/list.html'
     context_object_name = 'movimientos' # 'movimientos' es más plural
-    paginate_by =5 # Buena práctica
+    paginate_by = 10 # Buena práctica
 
 class MovimientoCreateView(CreateView):
     model = Movimiento
