@@ -25,7 +25,10 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Origen</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destino</th>
                 
-                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Tasa (Bs./$)</th> <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Costo Total ($/Bs.)</th> <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">REF Unitario ($/Bs.)</th> <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Tasa (Bs./$)</th> 
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Costo Total ($/Bs.)</th> 
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">REF Unitario ($/Bs.)</th> 
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
             </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
@@ -66,7 +69,7 @@
 
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
                     {% if mov.tipo == 'ENTRADA' and mov.tasa_cambio %}
-                        <span class="font-semibold text-gray-700">{{ mov.tasa_cambio|floatformat:4 }}</span> Bs/$
+                        <span class="font-semibold text-gray-700">{{ mov.tasa_cambio|floatformat:2 }}</span> Bs/$
                         {% if mov.numero_factura %}
                         <span class="text-xs block text-indigo-500">(Fact: {{ mov.numero_factura }})</span>
                         {% endif %}
@@ -93,7 +96,7 @@
                 
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                     {% if mov.ref_unitario_usd %}
-                        $<span class="font-bold">{{ mov.ref_unitario_usd|floatformat:4 }}</span>
+                        $<span class="font-bold">{{ mov.ref_unitario_usd|floatformat:2 }}</span>
                         
                         {% if mov.costo_unitario_bs %}
                         <span class="text-xs block text-gray-500">

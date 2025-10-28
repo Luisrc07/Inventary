@@ -44,4 +44,9 @@ class DepartamentoForm(forms.ModelForm):
         'nombre':TextInput(attrs={'class':tailwind_class}),
         'descripcion': Textarea(attrs={'class': tailwind_class, 'rows':2}),
         'encargado':Select(attrs={'class':tailwind_class}),
-        }           
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 1. Filtrar el campo 'departamento_origen'
+        self.fields['encargado'].queryset = Encargado.objects.filter(activo=True)          

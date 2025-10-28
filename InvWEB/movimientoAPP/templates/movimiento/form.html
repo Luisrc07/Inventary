@@ -3,24 +3,24 @@
 {% block tittle %}{% if object %}Editar Movimiento{% else %}Crear Movimiento{% endif %}{% endblock %}
 
 {% block content %}
-<h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
-    {% if object %}Editar Observación{% else %}Crear Nuevo Movimiento{% endif %}
+<h1 class="text-3xl font-bold text-gray-800 mb-4 border-b pb-2">
+    {% if object %}Editar Observación{% else %}Crear Nuevo Movimiento{% endif %}
 </h1>
 
 <div class="bg-white p-8 rounded-xl shadow-lg max-w-2xl mx-auto text-black">
-    
-    <form method="post" class="space-y-6">
+    
+    <form method="post" >
         {% csrf_token %}
 
         {% if form.non_field_errors %}
-            <div class="p-4 bg-red-50 border-l-4 border-red-400 text-red-700 mb-6 rounded-md" role="alert">
+            <div class="p-4 bg-red-50 border-l-4 border-red-400 text-red-700 mb-3 rounded-md" role="alert">
                 <p class="font-bold">Error en el Movimiento</p>
                 {{ form.non_field_errors.as_text }}
             </div>
         {% endif %}
         
         {% for field in form %}
-            <div class="flex flex-col" id="field_{{ field.name }}_wrapper">
+            <div class="flex flex-col mb-3" id="field_{{ field.name }}_wrapper"> 
                 <label for="{{ field.id_for_label }}" class="mb-1 font-medium text-black">
                     {{ field.label }}
                 </label>
@@ -45,7 +45,7 @@
                 <div id="calculo_usd_wrapper" class="p-3 bg-indigo-50 border-l-4 border-indigo-400 rounded-md mt-2 text-sm" style="display: none;">
                     <p class="font-bold text-indigo-700 mb-1">Cálculo de Referencia (USD):</p>
                     <div class="flex justify-between">
-                        <span class="font-medium text-gray-700">REF Unitario (USD): </span>
+                        <span class="font-medium text-gray-700">REF Unitario (USD) por UNIDAD: </span>
                         <span id="ref_unitario_usd_display" class="font-bold text-indigo-600">$0.0000</span>
                     </div>
                     <div class="flex justify-between">
@@ -54,161 +54,185 @@
                     </div>
                 </div>
                 {% endif %}
-                </div>
+            </div>
         {% endfor %}
 
-        {% url 'movimientoAPP:movimiento_list' as cancel_url %}
+         {% url 'movimientoAPP:movimiento_list' as cancel_url %}
 
-        <div class="flex justify-start items-center pt-6 border-t mt-6 space-x-4">
-            <button type="submit" class="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md">
+         <div class="flex justify-start items-center pt-6 border-t mt-6 space-x-4">
+            
+            <button type="submit" 
+                    class="flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md cursor-pointer">
                 <i class="fas fa-save mr-2"></i> Guardar Movimiento
             </button>
-            <a href="{{ cancel_url }}" class="text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">
+            
+            <a href="{{ cancel_url }}" 
+               class="text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center justify-center shadow">
                 <i class="fas fa-times mr-2"></i> Cancelar
             </a>
+            
         </div>
-    </form>
+    </form>
 </div>
 
 <script>
-    // Tu código JSON para productosData debe ser pasado desde la vista de Django
-    const productosData = JSON.parse('{{ productos_data_json|safe }}');
+    // Tu código JSON para productosData debe ser pasado desde la vista de Django
+    // Asegúrate de que 'productos_data_json' contenga {producto_id: unidad_medida}
+    const productosData = JSON.parse('{{ productos_data_json|safe }}');
 
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- Elementos Existentes ---
-        const tipoField = document.getElementById('id_tipo');
-        const productoField = document.getElementById('id_producto');
-        const cantidadField = document.getElementById('id_cantidad');
-        const proveedorWrapper = document.getElementById('field_proveedor_wrapper');
-        const origenWrapper = document.getElementById('field_departamento_origen_wrapper');
-        const destinoWrapper = document.getElementById('field_departamento_destino_wrapper');
-        
-        // --- Elementos de Costo y Factura (EXISTENTES) ---
-        const numeroFacturaWrapper = document.getElementById('field_numero_factura_wrapper');
-        const costoBsWrapper = document.getElementById('field_costo_unitario_bs_wrapper');
-        const tasaCambioWrapper = document.getElementById('field_tasa_cambio_wrapper');
-        const costoBsField = document.getElementById('id_costo_unitario_bs');
-        const tasaCambioField = document.getElementById('id_tasa_cambio');
-        
-        // --- Elementos de Cálculo (EXISTENTES) ---
-        const calculoUSDWrapper = document.getElementById('calculo_usd_wrapper');
-        const refUnitarioUSDDisplay = document.getElementById('ref_unitario_usd_display');
-        const costoTotalUSDDisplay = document.getElementById('costo_total_usd_display');
-        
-        // Elementos de cálculo de Unidades (Existente en HTML, se referencia aquí)
-        const calculoWrapper = document.getElementById('calculo_wrapper');
-        const unidadDisplay = document.getElementById('unidad_display');
-        const totalDisplay = document.getElementById('total_display');
-        
-        // --- NUEVA Función de Cálculo de Unidades Totales ---
-        function calcularTotal() {
-            const productoId = productoField.value;
-            const cantidadPaquetes = parseFloat(cantidadField.value) || 0;
-            
-            // Obtener la unidad_medida del producto seleccionado
-            const unidadMedida = parseFloat(productosData[productoId]) || 0;
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Elementos Existentes ---
+        const tipoField = document.getElementById('id_tipo');
+        const productoField = document.getElementById('id_producto');
+        const cantidadField = document.getElementById('id_cantidad');
+        const proveedorWrapper = document.getElementById('field_proveedor_wrapper');
+        const origenWrapper = document.getElementById('field_departamento_origen_wrapper');
+        const destinoWrapper = document.getElementById('field_departamento_destino_wrapper');
+        
+        // --- Elementos de Costo y Factura ---
+        const numeroFacturaWrapper = document.getElementById('field_numero_factura_wrapper');
+        const costoBsWrapper = document.getElementById('field_costo_unitario_bs_wrapper');
+        const tasaCambioWrapper = document.getElementById('field_tasa_cambio_wrapper');
+        const costoBsField = document.getElementById('id_costo_unitario_bs');
+        const tasaCambioField = document.getElementById('id_tasa_cambio');
+        
+        // --- Elementos de Cálculo USD ---
+        const calculoUSDWrapper = document.getElementById('calculo_usd_wrapper');
+        const refUnitarioUSDDisplay = document.getElementById('ref_unitario_usd_display');
+        const costoTotalUSDDisplay = document.getElementById('costo_total_usd_display');
+        
+        // Elementos de cálculo de Unidades
+        const calculoWrapper = document.getElementById('calculo_wrapper');
+        const unidadDisplay = document.getElementById('unidad_display');
+        const totalDisplay = document.getElementById('total_display');
+        
+        // --- Función de Cálculo de Unidades Totales (SIN CAMBIOS) ---
+        function calcularTotal() {
+            const productoId = productoField.value;
+            const cantidadPaquetes = parseFloat(cantidadField.value) || 0;
+            
+            // Obtener la unidad_medida del producto seleccionado. Usamos 1.0 como fallback
+            const unidadMedida = parseFloat(productosData[productoId]) || 1.0;
 
-            if (productoId && cantidadPaquetes > 0 && unidadMedida > 0) {
-                if(calculoWrapper) calculoWrapper.style.display = 'block';
-                
-                const totalUnidades = (cantidadPaquetes * unidadMedida); 
+            if (productoId && cantidadPaquetes > 0 && unidadMedida > 0) {
+                if(calculoWrapper) calculoWrapper.style.display = 'block';
+                
+                const totalUnidades = (cantidadPaquetes * unidadMedida); 
 
-                // Actualizar el texto del display
-                // Nota: Usamos toFixed(2) para mostrar un máximo de 2 decimales para las unidades.
-                unidadDisplay.textContent = `${unidadMedida.toFixed(2)}`;
-                totalDisplay.textContent = `${totalUnidades.toFixed(2)}`;
+                // Actualizar el texto del display
+                unidadDisplay.textContent = `${unidadMedida.toFixed(2)}`;
+                totalDisplay.textContent = `${totalUnidades.toFixed(2)}`;
 
-            } else {
-                if(calculoWrapper) calculoWrapper.style.display = 'none';
-                unidadDisplay.textContent = '...';
-                totalDisplay.textContent = '...';
-            }
-        }
-        // ------------------------------------
+            } else {
+                if(calculoWrapper) calculoWrapper.style.display = 'none';
+                unidadDisplay.textContent = '...';
+                totalDisplay.textContent = '...';
+            }
+        }
+        // ------------------------------------
 
 
-        // Función para alternar visibilidad (ACTUALIZADA)
-        function toggleFields() {
-            const tipo = tipoField.value;
+        // Función para alternar visibilidad (SIN CAMBIOS)
+        function toggleFields() {
+            const tipo = tipoField.value;
 
-            // Ocultar todos los campos condicionales al inicio
-            proveedorWrapper.style.display = 'none';
-            origenWrapper.style.display = 'none';
-            destinoWrapper.style.display = 'none';
-            if (numeroFacturaWrapper) numeroFacturaWrapper.style.display = 'none';
-            if (costoBsWrapper) costoBsWrapper.style.display = 'none';
-            if (tasaCambioWrapper) tasaCambioWrapper.style.display = 'none';
-            if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
+            // Ocultar todos los campos condicionales al inicio
+            proveedorWrapper.style.display = 'none';
+            origenWrapper.style.display = 'none';
+            destinoWrapper.style.display = 'none';
+            if (numeroFacturaWrapper) numeroFacturaWrapper.style.display = 'none';
+            if (costoBsWrapper) costoBsWrapper.style.display = 'none';
+            if (tasaCambioWrapper) tasaCambioWrapper.style.display = 'none';
+            if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
 
-            if (tipo === 'ENTRADA') {
-                proveedorWrapper.style.display = 'block';
-                destinoWrapper.style.display = 'block';
-                
-                // Mostrar campos de costo y factura
-                if (numeroFacturaWrapper) numeroFacturaWrapper.style.display = 'block';
-                if (costoBsWrapper) costoBsWrapper.style.display = 'block';
-                if (tasaCambioWrapper) tasaCambioWrapper.style.display = 'block';
-                
-                // Ocultar el campo de Origen (Departamento), ya que el origen es el Proveedor
-                origenWrapper.style.display = 'none'; 
-                
-            } else if (tipo === 'SALIDA') {
-                origenWrapper.style.display = 'block';
-                destinoWrapper.style.display = 'none';
-            } else if (tipo === 'TRANSFERENCIA') {
-                origenWrapper.style.display = 'block';
-                destinoWrapper.style.display = 'block';
-            }
-            
-            // Recalcular costos y unidades
-            calcularTotal(); // <--- LLAMADA DE UNIDADES
+            if (tipo === 'ENTRADA') {
+                proveedorWrapper.style.display = 'block';
+                destinoWrapper.style.display = 'block';
+                
+                // Mostrar campos de costo y factura
+                if (numeroFacturaWrapper) numeroFacturaWrapper.style.display = 'block';
+                if (costoBsWrapper) costoBsWrapper.style.display = 'block';
+                if (tasaCambioWrapper) tasaCambioWrapper.style.display = 'block';
+                
+                // Ocultar el campo de Origen (Departamento), ya que el origen es el Proveedor
+                origenWrapper.style.display = 'none'; 
+                
+            } else if (tipo === 'SALIDA') {
+                origenWrapper.style.display = 'block';
+                destinoWrapper.style.display = 'none';
+            } else if (tipo === 'TRANSFERENCIA') {
+                origenWrapper.style.display = 'block';
+                destinoWrapper.style.display = 'block';
+            }
+            
+            // Recalcular costos y unidades
+            calcularTotal(); 
+            calcularCostoUSD();
+        }
+
+        // --- Función de Cálculo USD (MODIFICADA para usar UNIDAD INDIVIDUAL) ---
+        function calcularCostoUSD() {
+            const tipo = tipoField.value;
+            // Solo calcular USD para ENTRADAS
+            if (tipo !== 'ENTRADA' || !costoBsField || !tasaCambioField) {
+                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
+                return;
+            }
+
+            const productoId = productoField.value;
+
+            // Usamos || 0.01 para evitar división por cero o valores negativos
+            const costoUnitarioBs = parseFloat(costoBsField.value) || 0; // Costo por PAQUETE (en Bs.)
+            const tasaCambio = parseFloat(tasaCambioField.value) || 0;
+            const cantidadPaquetes = parseFloat(cantidadField.value) || 0; // Cantidad de PAQUETES
+            
+            // Unidades por Paquete. Usamos 1.0 como fallback para evitar división por cero.
+            const unidadMedida = parseFloat(productosData[productoId]) || 1.0; 
+
+            if (costoUnitarioBs > 0 && tasaCambio > 0 && cantidadPaquetes > 0 && unidadMedida > 0) {
+                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'block';
+                
+                // 1. Calcular el Costo Unitario por UNIDAD INDIVIDUAL en USD
+                // (Costo Paquete Bs / Unidades por Paquete) / Tasa de Cambio
+                const costoUnitarioBsPorUnidad = costoUnitarioBs / unidadMedida;
+                const refUnitarioUSD_por_unidad = costoUnitarioBsPorUnidad / tasaCambio;
+                
+                // 2. Calcular el Costo Total en USD (basado en paquetes)
+                // Costo Total Paquete USD = (costoUnitarioBs / tasaCambio)
+                // Costo Total Estimado USD = Costo Total Paquete USD * Cantidad de Paquetes
+                // Simplificado: 
+                const costoTotalUSD = (costoUnitarioBs / tasaCambio) * cantidadPaquetes;
+
+
+                refUnitarioUSDDisplay.textContent = `$${refUnitarioUSD_por_unidad.toFixed(4)}`; // 4 decimales para precisión en REF
+                costoTotalUSDDisplay.textContent = `$${costoTotalUSD.toFixed(2)}`;
+
+            } else {
+                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
+            }
+        }
+        // ------------------------------------
+
+        // Asignar los listeners (AJUSTADO para productoField)
+        tipoField.addEventListener('change', toggleFields);
+        
+        // Cuando cambia el Producto, se recalculan AMBAS cosas (Unidades y Costo USD)
+        productoField.addEventListener('change', function() {
+            calcularTotal();
             calcularCostoUSD();
-        }
-
-        // --- Función de Cálculo USD (EXISTENTE) ---
-        function calcularCostoUSD() {
-            const tipo = tipoField.value;
-            // Solo calcular USD para ENTRADAS
-            if (tipo !== 'ENTRADA' || !costoBsField || !tasaCambioField) {
-                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
-                return;
-            }
-
-            // Usamos || 0.01 para evitar división por cero o valores negativos
-            const costoUnitarioBs = parseFloat(costoBsField.value) || 0;
-            const tasaCambio = parseFloat(tasaCambioField.value) || 0;
-            const cantidad = parseFloat(cantidadField.value) || 0;
-
-            if (costoUnitarioBs > 0 && tasaCambio > 0 && cantidad > 0) {
-                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'block';
-                
-                const refUnitarioUSD = costoUnitarioBs / tasaCambio;
-                const costoTotalUSD = refUnitarioUSD * cantidad;
-
-                refUnitarioUSDDisplay.textContent = `$${refUnitarioUSD.toFixed(4)}`; // 4 decimales para precisión en REF
-                costoTotalUSDDisplay.textContent = `$${costoTotalUSD.toFixed(2)}`;
-
-            } else {
-                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
-            }
-        }
-        // ------------------------------------
-
-        // Asignar los listeners
-        tipoField.addEventListener('change', toggleFields);
-        productoField.addEventListener('change', calcularTotal); // <--- NUEVO LISTENER
-        
-        if (costoBsField) costoBsField.addEventListener('input', calcularCostoUSD);
-        if (tasaCambioField) tasaCambioField.addEventListener('input', calcularCostoUSD);
-        
-        // El campo cantidad llama a AMBAS funciones de cálculo
-        cantidadField.addEventListener('input', function() {
-            calcularCostoUSD();
-            calcularTotal(); // <--- LLAMADA A UNIDADES
         });
-        
-        // Ejecutar al cargar la página
-        toggleFields();
-    });
+        
+        if (costoBsField) costoBsField.addEventListener('input', calcularCostoUSD);
+        if (tasaCambioField) tasaCambioField.addEventListener('input', calcularCostoUSD);
+        
+        // El campo cantidad llama a AMBAS funciones de cálculo
+        cantidadField.addEventListener('input', function() {
+            calcularCostoUSD();
+            calcularTotal(); 
+        });
+        
+        // Ejecutar al cargar la página
+        toggleFields();
+    });
 </script>
 {% endblock %}

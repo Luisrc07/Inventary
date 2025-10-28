@@ -1,7 +1,7 @@
 # En movimientoAPP/forms.py
 
 from django import forms
-from .models import Movimiento
+from .models import Movimiento, Departamento
 from django.forms import TextInput, Textarea, Select, NumberInput
 
 tailwind_class = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500'
@@ -44,11 +44,12 @@ class MovimientoForm(forms.ModelForm):
             'cantidad': 'Cantidad de Paquetes (Ej: Cajas, Bolsas, etc.)'
         }
 
-    #def __init__(self, *args, **kwargs):
-        #super().__init__(*args, **kwargs)
-        # Ocultamos el campo real de origen por defecto
-        #self.fields['departamento_origen'].widget.attrs['style'] = 'display: none;'
-
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 1. Filtrar el campo 'departamento_origen'
+        self.fields['departamento_origen'].queryset = Departamento.objects.filter(activo=True)
+        # 2. Filtrar el campo 'departamento_destino'
+        self.fields['departamento_destino'].queryset = Departamento.objects.filter(activo=True)
 
     def clean(self):
         cleaned_data = super().clean()
