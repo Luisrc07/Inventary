@@ -47,13 +47,14 @@
                             <a href="{{ update_url }}" 
                             class="text-indigo-600 hover:text-indigo-900 mr-3">
                                 <i class="fas fa-edit"></i>Editar
-                            </a> |
+                        <!--      </a> |
 
                             {% url 'departamentoAPP:departamento_eliminar' pk=departamento.pk as delete_url%}
                             <a href="{{ delete_url }}" class="text-red-600 hover:text-red-900">                         
                                 <i class="fas fa-trash-alt"></i>Eliminar
                             </a>
                         </td>
+                        -->
                     </tr>
                     {% endfor %}
                     </tbody>

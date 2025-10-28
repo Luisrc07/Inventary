@@ -9,7 +9,8 @@ from django.contrib import messages
 from django.forms import ValidationError
 from departamentoAPP.models import Departamento
 from django.utils import timezone
-from departamentoAPP.models import Departamento
+from django.http import JsonResponse
+
 # --- VISTAS DE MOVIMIENTO ---
 
 # --- IMPORTACIONES PARA PDF! ---
@@ -41,7 +42,7 @@ class MovimientoListview(ListView):
     model = Movimiento
     template_name = 'movimiento/list.html'
     context_object_name = 'movimientos' # 'movimientos' es más plural
-    paginate_by = 25 # Buena práctica
+    paginate_by =5 # Buena práctica
 
 class MovimientoCreateView(CreateView):
     model = Movimiento
@@ -164,3 +165,28 @@ def generar_reporte_stock_pdf(request, pk):
     response['Content-Disposition'] = f'inline; filename="reporte_stock_{depto.nombre}.pdf"'
     
     return response
+
+
+def load_productos(request):
+    """
+    Recibe el ID de la categoría y devuelve una lista de productos en formato JSON.
+    """
+    # 1. Obtener el ID de la categoría desde la petición GET
+    categoria_id = request.GET.get('categoria_id')
+    
+    if categoria_id:
+        # 2. Filtrar los productos por categoria_id
+        # IMPORTANTE: Se ELIMINA el filtro `activo=True` si el campo no existe.
+        # Si SÍ existe, déjalo, pero si no, ELIMÍNALO para que la consulta funcione.
+        productos = Producto.objects.filter(categoria_id=categoria_id).order_by('nombre')
+    else:
+        productos = Producto.objects.none()
+        
+    productos_list = []
+    for producto in productos:
+        productos_list.append({
+            'id': str(producto.pk),  
+            'nombre': f"{producto.nombre} ({producto.unidad_medida} u/paq)" 
+        })
+        
+    return JsonResponse(productos_list, safe=False)

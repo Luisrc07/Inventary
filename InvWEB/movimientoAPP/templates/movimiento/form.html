@@ -2,6 +2,10 @@
 
 {% block tittle %}{% if object %}Editar Movimiento{% else %}Crear Movimiento{% endif %}{% endblock %}
 
+{% block head_includes %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+
 {% block content %}
 <h1 class="text-3xl font-bold text-gray-800 mb-4 border-b pb-2">
     {% if object %}Editar Observación{% else %}Crear Nuevo Movimiento{% endif %}
@@ -57,7 +61,7 @@
             </div>
         {% endfor %}
 
-         {% url 'movimientoAPP:movimiento_list' as cancel_url %}
+     {% url 'movimientoAPP:movimiento_list' as cancel_url %}
 
          <div class="flex justify-start items-center pt-6 border-t mt-6 space-x-4">
             
@@ -75,164 +79,204 @@
     </form>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-    // Tu código JSON para productosData debe ser pasado desde la vista de Django
-    // Asegúrate de que 'productos_data_json' contenga {producto_id: unidad_medida}
-    const productosData = JSON.parse('{{ productos_data_json|safe }}');
+    // Tu código JSON pasado desde la vista
+    const productosData = JSON.parse('{{ productos_data_json|safe }}');
 
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- Elementos Existentes ---
-        const tipoField = document.getElementById('id_tipo');
-        const productoField = document.getElementById('id_producto');
-        const cantidadField = document.getElementById('id_cantidad');
-        const proveedorWrapper = document.getElementById('field_proveedor_wrapper');
-        const origenWrapper = document.getElementById('field_departamento_origen_wrapper');
-        const destinoWrapper = document.getElementById('field_departamento_destino_wrapper');
-        
-        // --- Elementos de Costo y Factura ---
-        const numeroFacturaWrapper = document.getElementById('field_numero_factura_wrapper');
-        const costoBsWrapper = document.getElementById('field_costo_unitario_bs_wrapper');
-        const tasaCambioWrapper = document.getElementById('field_tasa_cambio_wrapper');
-        const costoBsField = document.getElementById('id_costo_unitario_bs');
-        const tasaCambioField = document.getElementById('id_tasa_cambio');
-        
-        // --- Elementos de Cálculo USD ---
-        const calculoUSDWrapper = document.getElementById('calculo_usd_wrapper');
-        const refUnitarioUSDDisplay = document.getElementById('ref_unitario_usd_display');
-        const costoTotalUSDDisplay = document.getElementById('costo_total_usd_display');
-        
-        // Elementos de cálculo de Unidades
-        const calculoWrapper = document.getElementById('calculo_wrapper');
-        const unidadDisplay = document.getElementById('unidad_display');
-        const totalDisplay = document.getElementById('total_display');
-        
-        // --- Función de Cálculo de Unidades Totales (SIN CAMBIOS) ---
-        function calcularTotal() {
-            const productoId = productoField.value;
-            const cantidadPaquetes = parseFloat(cantidadField.value) || 0;
-            
-            // Obtener la unidad_medida del producto seleccionado. Usamos 1.0 como fallback
-            const unidadMedida = parseFloat(productosData[productoId]) || 1.0;
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Elementos Existentes (aseguramos que existen) ---
+        const tipoField = document.getElementById('id_tipo');
+        const productoField = document.getElementById('select-producto');
+        const cantidadField = document.getElementById('id_cantidad');
+        const proveedorWrapper = document.getElementById('field_proveedor_wrapper');
+        const origenWrapper = document.getElementById('field_departamento_origen_wrapper');
+        const destinoWrapper = document.getElementById('field_departamento_destino_wrapper');
+        const numeroFacturaWrapper = document.getElementById('field_numero_factura_wrapper');
+        const costoBsWrapper = document.getElementById('field_costo_unitario_bs_wrapper');
+        const tasaCambioWrapper = document.getElementById('field_tasa_cambio_wrapper');
+        const costoBsField = document.getElementById('id_costo_unitario_bs');
+        const tasaCambioField = document.getElementById('id_tasa_cambio');
+        const calculoUSDWrapper = document.getElementById('calculo_usd_wrapper');
+        const refUnitarioUSDDisplay = document.getElementById('ref_unitario_usd_display');
+        const costoTotalUSDDisplay = document.getElementById('costo_total_usd_display');
+        const calculoWrapper = document.getElementById('calculo_wrapper');
+        const unidadDisplay = document.getElementById('unidad_display');
+        const totalDisplay = document.getElementById('total_display');
+        // ------------------------------------
+        
+        // --- Funciones de Cálculo y Toggling (MANTENIDAS) ---
+        function calcularTotal() { 
+            // ... (Tu lógica de calcularTotal sin cambios) ... 
+            const productoId = productoField.value;
+            const cantidadPaquetes = parseFloat(cantidadField.value) || 0;
+            const unidadMedida = parseFloat(productosData[productoId]) || 1.0;
 
-            if (productoId && cantidadPaquetes > 0 && unidadMedida > 0) {
-                if(calculoWrapper) calculoWrapper.style.display = 'block';
-                
-                const totalUnidades = (cantidadPaquetes * unidadMedida); 
+            if (productoId && cantidadPaquetes > 0 && unidadMedida > 0) {
+                if(calculoWrapper) calculoWrapper.style.display = 'block';
+                const totalUnidades = (cantidadPaquetes * unidadMedida); 
+                unidadDisplay.textContent = `${unidadMedida.toFixed(2)}`;
+                totalDisplay.textContent = `${totalUnidades.toFixed(2)}`;
+            } else {
+                if(calculoWrapper) calculoWrapper.style.display = 'none';
+                unidadDisplay.textContent = '...';
+                totalDisplay.textContent = '...';
+            }
+        }
+        
+        function toggleFields() { 
+            // ... (Tu lógica de toggleFields sin cambios, asegura visibilidad) ... 
+            const tipo = tipoField.value;
 
-                // Actualizar el texto del display
-                unidadDisplay.textContent = `${unidadMedida.toFixed(2)}`;
-                totalDisplay.textContent = `${totalUnidades.toFixed(2)}`;
+            proveedorWrapper.style.display = 'none';
+            origenWrapper.style.display = 'none';
+            destinoWrapper.style.display = 'none';
+            if (numeroFacturaWrapper) numeroFacturaWrapper.style.display = 'none';
+            if (costoBsWrapper) costoBsWrapper.style.display = 'none';
+            if (tasaCambioWrapper) tasaCambioWrapper.style.display = 'none';
+            if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
 
-            } else {
-                if(calculoWrapper) calculoWrapper.style.display = 'none';
-                unidadDisplay.textContent = '...';
-                totalDisplay.textContent = '...';
-            }
-        }
-        // ------------------------------------
+            if (tipo === 'ENTRADA') {
+                proveedorWrapper.style.display = 'block';
+                destinoWrapper.style.display = 'block';
+                if (numeroFacturaWrapper) numeroFacturaWrapper.style.display = 'block';
+                if (costoBsWrapper) costoBsWrapper.style.display = 'block';
+                if (tasaCambioWrapper) tasaCambioWrapper.style.display = 'block';
+                origenWrapper.style.display = 'none'; 
+            } else if (tipo === 'SALIDA') {
+                origenWrapper.style.display = 'block';
+                destinoWrapper.style.display = 'none';
+            } else if (tipo === 'TRANSFERENCIA') {
+                origenWrapper.style.display = 'block';
+                destinoWrapper.style.display = 'block';
+            }
+            
+            calcularTotal(); 
+            calcularCostoUSD();
+        }
+        
+        function calcularCostoUSD() { 
+            // ... (Tu lógica de calcularCostoUSD sin cambios) ... 
+            const tipo = tipoField.value;
+            if (tipo !== 'ENTRADA' || !costoBsField || !tasaCambioField) {
+                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
+                return;
+            }
 
+            const productoId = productoField.value;
+            const costoUnitarioBs = parseFloat(costoBsField.value) || 0;
+            const tasaCambio = parseFloat(tasaCambioField.value) || 0;
+            const cantidadPaquetes = parseFloat(cantidadField.value) || 0;
+            const unidadMedida = parseFloat(productosData[productoId]) || 1.0; 
 
-        // Función para alternar visibilidad (SIN CAMBIOS)
-        function toggleFields() {
-            const tipo = tipoField.value;
+            if (costoUnitarioBs > 0 && tasaCambio > 0 && cantidadPaquetes > 0 && unidadMedida > 0) {
+                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'block';
+                const costoUnitarioBsPorUnidad = costoUnitarioBs / unidadMedida;
+                const refUnitarioUSD_por_unidad = costoUnitarioBsPorUnidad / tasaCambio;
+                const costoTotalUSD = (costoUnitarioBs / tasaCambio) * cantidadPaquetes;
 
-            // Ocultar todos los campos condicionales al inicio
-            proveedorWrapper.style.display = 'none';
-            origenWrapper.style.display = 'none';
-            destinoWrapper.style.display = 'none';
-            if (numeroFacturaWrapper) numeroFacturaWrapper.style.display = 'none';
-            if (costoBsWrapper) costoBsWrapper.style.display = 'none';
-            if (tasaCambioWrapper) tasaCambioWrapper.style.display = 'none';
-            if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
+                refUnitarioUSDDisplay.textContent = `$${refUnitarioUSD_por_unidad.toFixed(4)}`;
+                costoTotalUSDDisplay.textContent = `$${costoTotalUSD.toFixed(2)}`;
+            } else {
+                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
+            }
+        }
+        // ------------------------------------
 
-            if (tipo === 'ENTRADA') {
-                proveedorWrapper.style.display = 'block';
-                destinoWrapper.style.display = 'block';
-                
-                // Mostrar campos de costo y factura
-                if (numeroFacturaWrapper) numeroFacturaWrapper.style.display = 'block';
-                if (costoBsWrapper) costoBsWrapper.style.display = 'block';
-                if (tasaCambioWrapper) tasaCambioWrapper.style.display = 'block';
-                
-                // Ocultar el campo de Origen (Departamento), ya que el origen es el Proveedor
-                origenWrapper.style.display = 'none'; 
-                
-            } else if (tipo === 'SALIDA') {
-                origenWrapper.style.display = 'block';
-                destinoWrapper.style.display = 'none';
-            } else if (tipo === 'TRANSFERENCIA') {
-                origenWrapper.style.display = 'block';
-                destinoWrapper.style.display = 'block';
-            }
-            
-            // Recalcular costos y unidades
-            calcularTotal(); 
-            calcularCostoUSD();
-        }
-
-        // --- Función de Cálculo USD (MODIFICADA para usar UNIDAD INDIVIDUAL) ---
-        function calcularCostoUSD() {
-            const tipo = tipoField.value;
-            // Solo calcular USD para ENTRADAS
-            if (tipo !== 'ENTRADA' || !costoBsField || !tasaCambioField) {
-                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
-                return;
-            }
-
-            const productoId = productoField.value;
-
-            // Usamos || 0.01 para evitar división por cero o valores negativos
-            const costoUnitarioBs = parseFloat(costoBsField.value) || 0; // Costo por PAQUETE (en Bs.)
-            const tasaCambio = parseFloat(tasaCambioField.value) || 0;
-            const cantidadPaquetes = parseFloat(cantidadField.value) || 0; // Cantidad de PAQUETES
-            
-            // Unidades por Paquete. Usamos 1.0 como fallback para evitar división por cero.
-            const unidadMedida = parseFloat(productosData[productoId]) || 1.0; 
-
-            if (costoUnitarioBs > 0 && tasaCambio > 0 && cantidadPaquetes > 0 && unidadMedida > 0) {
-                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'block';
-                
-                // 1. Calcular el Costo Unitario por UNIDAD INDIVIDUAL en USD
-                // (Costo Paquete Bs / Unidades por Paquete) / Tasa de Cambio
-                const costoUnitarioBsPorUnidad = costoUnitarioBs / unidadMedida;
-                const refUnitarioUSD_por_unidad = costoUnitarioBsPorUnidad / tasaCambio;
-                
-                // 2. Calcular el Costo Total en USD (basado en paquetes)
-                // Costo Total Paquete USD = (costoUnitarioBs / tasaCambio)
-                // Costo Total Estimado USD = Costo Total Paquete USD * Cantidad de Paquetes
-                // Simplificado: 
-                const costoTotalUSD = (costoUnitarioBs / tasaCambio) * cantidadPaquetes;
-
-
-                refUnitarioUSDDisplay.textContent = `$${refUnitarioUSD_por_unidad.toFixed(4)}`; // 4 decimales para precisión en REF
-                costoTotalUSDDisplay.textContent = `$${costoTotalUSD.toFixed(2)}`;
-
-            } else {
-                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
-            }
-        }
-        // ------------------------------------
-
-        // Asignar los listeners (AJUSTADO para productoField)
-        tipoField.addEventListener('change', toggleFields);
-        
-        // Cuando cambia el Producto, se recalculan AMBAS cosas (Unidades y Costo USD)
-        productoField.addEventListener('change', function() {
+        // --- Listeners nativos (MANTENIDOS) ---
+        tipoField.addEventListener('change', toggleFields);
+        
+        // Listener importante: llama a los cálculos cuando cambia el producto
+        productoField.addEventListener('change', function() {
             calcularTotal();
             calcularCostoUSD();
         });
-        
-        if (costoBsField) costoBsField.addEventListener('input', calcularCostoUSD);
-        if (tasaCambioField) tasaCambioField.addEventListener('input', calcularCostoUSD);
-        
-        // El campo cantidad llama a AMBAS funciones de cálculo
-        cantidadField.addEventListener('input', function() {
-            calcularCostoUSD();
-            calcularTotal(); 
-        });
-        
-        // Ejecutar al cargar la página
-        toggleFields();
-    });
+        
+        if (costoBsField) costoBsField.addEventListener('input', calcularCostoUSD);
+        if (tasaCambioField) tasaCambioField.addEventListener('input', calcularCostoUSD);
+        
+        // Listener importante: llama a los cálculos cuando cambia la cantidad
+        cantidadField.addEventListener('input', function() {
+            calcularCostoUSD();
+            calcularTotal(); 
+        });
+        
+        // Ejecutar al cargar la página
+        toggleFields();
+    });
+
+    // --------------------------------------------------------------------
+    // CÓDIGO AJAX/Select2 (USA jQuery)
+    // --------------------------------------------------------------------
+    $(document).ready(function() {
+        
+        // Elementos identificados por ID
+        const productoSelect = $("#select-producto");
+        const categoriaSelect = $("#select-categoria");
+        
+        // 1. Inicializar Select2 en el campo de Categoría y Producto
+        categoriaSelect.select2({ placeholder: "Seleccione una categoría", allowClear: true, theme: "default" });
+        productoSelect.select2({ placeholder: "Busque o seleccione un producto", allowClear: true, theme: "default" });
+
+
+        // 2. Detectar cambio en el SELECT de Categoría y hacer la llamada AJAX
+        categoriaSelect.on('change', function () {
+            const categoriaId = $(this).val(); 
+            
+            // Limpiar y deshabilitar el select de productos mientras carga
+            productoSelect.val(null).trigger('change'); 
+            productoSelect.empty().prop('disabled', true);
+            productoSelect.select2('destroy'); 
+
+            if (categoriaId) {
+                $.ajax({
+                    url: "{% url 'movimientoAPP:ajax_load_productos' %}", 
+                    data: { 'categoria_id': categoriaId },
+                    dataType: 'json',
+                    success: function (data) {
+                        productoSelect.empty().append('<option value="">--- Seleccione un Producto ---</option>');
+                        
+                        $.each(data, function (index, producto) {
+                            productoSelect.append(new Option(producto.nombre, producto.id));
+                        });
+                        
+                        // Re-habilitar y reactivar Select2
+                        productoSelect.prop('disabled', false);
+                        productoSelect.select2({ placeholder: "Busque o seleccione un producto", allowClear: true, theme: "default" });
+
+                        // Lógica de Edición: Seleccionar el valor inicial si aplica
+                        const initialProductoId = productoSelect.attr('data-initial');
+                        if (initialProductoId) {
+                            productoSelect.val(initialProductoId).trigger('change');
+                            productoSelect.removeAttr('data-initial'); 
+                        }
+                        
+                        // Forzar el evento change nativo para que se disparen los cálculos JS
+                        if (productoSelect.val()) {
+                             productoSelect.trigger('change');
+                        }
+                    },
+                    error: function() {
+                        productoSelect.empty().append('<option value="">Error al cargar productos.</option>');
+                        productoSelect.prop('disabled', false);
+                        productoSelect.select2({ placeholder: "Error al cargar" });
+                    }
+                });
+            } else {
+                // Si no hay categoría seleccionada
+                productoSelect.empty().append('<option value="">--- Seleccione una Categoría primero ---</option>');
+                productoSelect.prop('disabled', false);
+                productoSelect.select2({ placeholder: "Busque o seleccione un producto", allowClear: true, theme: "default" });
+            }
+        });
+        
+        // 3. Lógica de precarga para EDICIÓN: 
+        if (productoSelect.val()) {
+            productoSelect.attr('data-initial', productoSelect.val()); 
+            // Esto forzará la carga de productos y seleccionará el producto inicial.
+            categoriaSelect.trigger('change'); 
+        } 
+    });
 </script>
 {% endblock %}

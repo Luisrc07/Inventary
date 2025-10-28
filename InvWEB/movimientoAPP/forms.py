@@ -1,13 +1,29 @@
-# En movimientoAPP/forms.py
 
 from django import forms
 from .models import Movimiento, Departamento
+from inventarioAPP.models import Producto, Categoria
 from django.forms import TextInput, Textarea, Select, NumberInput
+from django.forms import ModelChoiceField
+from django.forms import Select
+
 
 tailwind_class = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500'
 
-class MovimientoForm(forms.ModelForm):
+class CategoriaModelChoiceField(ModelChoiceField):
+    def label_from_instance(self, obj):
+        return obj.nombre
     
+class MovimientoForm(forms.ModelForm):
+    # 1. Campo de Categoría (Auxiliar)
+    categoria_select = CategoriaModelChoiceField(
+        queryset=Categoria.objects.all(),
+        label="Filtrar por Categoría",
+        required=False,
+        empty_label="--- Seleccione una Categoría ---",
+        # Asignamos el ID esperado por el JS
+        widget=Select(attrs={'class': tailwind_class, 'id': 'select-categoria'})
+    )
+
     class Meta:
         model = Movimiento
         # Seleccionamos los campos que el usuario DEBE llenar
@@ -15,9 +31,9 @@ class MovimientoForm(forms.ModelForm):
             'tipo',
             'producto',
             'cantidad',
-            'numero_factura',      # <-- ¡NUEVO CAMPO!
-            'costo_unitario_bs',   # <-- ¡NUEVO CAMPO!
-            'tasa_cambio',         # <-- ¡NUEVO CAMPO!
+            'numero_factura', 
+            'costo_unitario_bs', 
+            'tasa_cambio', 
             'proveedor',
             'departamento_origen',
             'departamento_destino',
@@ -25,7 +41,7 @@ class MovimientoForm(forms.ModelForm):
         ]
         widgets = {
             'tipo': Select(attrs={'class': tailwind_class, 'id': 'id_tipo'}),
-            'producto': Select(attrs={'class': tailwind_class}),
+            'producto': Select(attrs={'class': tailwind_class, 'id': 'select-producto'}),
             # *** CAMBIO AQUÍ: 'step': 'any' para aceptar decimales ***
 
             'cantidad': NumberInput(attrs={'class': tailwind_class, 'min': '0.01', 'step': 'any'}), 
@@ -46,10 +62,44 @@ class MovimientoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # 1. Filtrar el campo 'departamento_origen'
+
+        # 2. Inicializar el campo 'producto' vacío
+        self.fields['producto'].queryset = Producto.objects.none()
+        
+        # Identificador para la categoría a usar en el filtrado
+        categoria_id_a_filtrar = None
+        
+        # --- Lógica de Repoblación del Select 'producto' ---
+        
+        # Caso A: Edición de un objeto existente (Instancia con producto_id)
+        if self.instance and self.instance.pk and self.instance.producto_id:
+            # Producto existe, podemos obtener su categoría
+            producto_instance = self.instance.producto 
+            categoria_id_a_filtrar = producto_instance.categoria_id
+            
+        # Caso B: POST fallido (el formulario contiene datos)
+        elif self.data and self.data.get('categoria_select'):
+            # Si el usuario seleccionó una categoría en el intento fallido, la usamos
+            categoria_id_a_filtrar = self.data.get('categoria_select')
+        
+        
+        # Si logramos identificar la categoría, filtramos el queryset
+        if categoria_id_a_filtrar:
+            # Filtramos el queryset del producto por la categoría
+            self.fields['producto'].queryset = Producto.objects.filter(
+                categoria_id=categoria_id_a_filtrar
+            ).order_by('nombre')
+            
+            # Establecemos la categoría inicial en el campo auxiliar (para que se muestre seleccionada)
+            self.initial['categoria_select'] = categoria_id_a_filtrar
+        
+        # --- Fin Lógica de Repoblación ---
+
+
+        # 1. Filtrar los campos de Departamento (Mantenido)
         self.fields['departamento_origen'].queryset = Departamento.objects.filter(activo=True)
-        # 2. Filtrar el campo 'departamento_destino'
         self.fields['departamento_destino'].queryset = Departamento.objects.filter(activo=True)
+
 
     def clean(self):
         cleaned_data = super().clean()

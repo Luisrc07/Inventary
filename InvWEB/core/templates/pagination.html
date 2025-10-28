@@ -1,0 +1,37 @@
+{% if is_paginated %}
+<div class="flex justify-center mt-6">
+    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+        
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" 
+           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+            <span class="sr-only">Anterior</span>
+            <i class="fas fa-chevron-left h-5 w-5"></i>
+        </a>
+        {% else %}
+        <span class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400 cursor-default">
+            <span class="sr-only">Anterior</span>
+            <i class="fas fa-chevron-left h-5 w-5"></i>
+        </span>
+        {% endif %}
+
+        <a href="#" 
+           class="relative inline-flex items-center px-4 py-2 border border-indigo-500 bg-indigo-600 text-sm font-bold text-white">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </a>
+        
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" 
+           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+            <span class="sr-only">Siguiente</span>
+            <i class="fas fa-chevron-right h-5 w-5"></i>
+        </a>
+        {% else %}
+        <span class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400 cursor-default">
+            <span class="sr-only">Siguiente</span>
+            <i class="fas fa-chevron-right h-5 w-5"></i>
+        </span>
+        {% endif %}
+    </nav>
+</div>
+{% endif %}
