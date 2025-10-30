@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block tittle %}Editar Usuario{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-lg shadow-md">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        Editar Usuario: {{ view.get_object.user.username }}
+      </h2>
+      <p class="mt-2 text-center text-sm text-gray-600">
+        Actualiza el rol, departamento y estado del usuario.
+      </p>
+    </div>
+
+    <form class="mt-8 space-y-6" method="POST">
+      {% csrf_token %}
+
+      {% if form.errors %}
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error al guardar:</strong>
+        <ul class="list-disc list-inside">
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <div class="pt-4">
+        <label for="{{ form.rol.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.rol.label }}</label>
+        {{ form.rol }}
+      </div>
+      
+      <div class="pt-4" id="departamento-wrapper">
+        <label for="{{ form.departamento.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.departamento.label }}</label>
+        {{ form.departamento }}
+      </div>
+      
+      <div class="pt-4 flex items-center">
+        {{ form.is_active }}
+        <label for="{{ form.is_active.id_for_label }}" class="ml-2 block text-sm font-medium text-gray-700">{{ form.is_active.label }}</V>
+      </div>
+      <p class="mt-1 text-xs text-gray-500">{{ form.is_active.help_text }}</p>
+
+
+      <div>
+        <button type="submit"
+          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Guardar Cambios
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Script 1: Añadir estilos de Tailwind
+  const fieldIds = [
+    '{{ form.rol.id_for_label }}',
+    '{{ form.departamento.id_for_label }}'
+  ];
+  const tailwindClasses = [
+    "w-full", "px-3", "py-2", "mt-1", "border", "border-gray-300", 
+    "rounded-lg", "focus:outline-none", "focus:ring-2", "focus:ring-indigo-500"
+  ];
+  document.addEventListener('DOMContentLoaded', function() {
+    fieldIds.forEach(id => {
+      const element = document.getElementById(id);
+      if (element) element.classList.add(...tailwindClasses);
+    });
+  });
+
+  // Script 2: Lógica para mostrar/ocultar Departamento
+  document.addEventListener('DOMContentLoaded', function() {
+    const rolSelect = document.getElementById('{{ form.rol.id_for_label }}');
+    const departamentoWrapper = document.getElementById('departamento-wrapper');
+    
+    function toggleDepartamentoVisibility() {
+      if (!rolSelect || !departamentoWrapper) return;
+      const selectedRol = rolSelect.value;
+      
+      if (selectedRol === 'GERENTE' || selectedRol === 'OPERADOR') {
+        departamentoWrapper.style.display = 'block';
+      } else {
+        departamentoWrapper.style.display = 'none';
+      }
+    }
+    if(rolSelect) rolSelect.addEventListener('change', toggleDepartamentoVisibility);
+    toggleDepartamentoVisibility();
+  });
+</script>
+{% endblock %}

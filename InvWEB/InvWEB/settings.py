@@ -139,7 +139,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 TAILWIND_APP_NAME = 'theme'
 NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
 
-# En settings.py
+
 LOGIN_URL = 'usuario:login' # El nombre de nuestra futura URL de login
 LOGIN_REDIRECT_URL = 'movimientoAPP:inicio'  # A dónde ir después de un login exitoso (ej. 'inicio')
 LOGOUT_REDIRECT_URL = 'usuario:login' # A dónde ir después de cerrar sesión

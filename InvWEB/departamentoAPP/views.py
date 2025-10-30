@@ -3,31 +3,10 @@
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-from departamentoAPP.models import Departamento, Encargado
+from departamentoAPP.models import Departamento
 # Create your views here.
-from departamentoAPP.forms import EncargadoForm, DepartamentoForm
+from departamentoAPP.forms import  DepartamentoForm
  #Encargado
-class EncargadoListview(ListView):
-    model = Encargado
-    template_name = 'encargado/list.html' # CORREGIDO
-    context_object_name = 'encargados'
-
-class EncargadoCreateView(CreateView):
-    model = Encargado
-    template_name = 'encargado/form.html' # CORREGIDO
-    form_class = EncargadoForm
-    success_url = reverse_lazy('departamentoAPP:encargado_list')
-
-class EncargadoUpdateView(UpdateView):
-    model = Encargado
-    template_name = 'encargado/form.html' # CORREGIDO
-    form_class = EncargadoForm
-    success_url = reverse_lazy('departamentoAPP:encargado_list')
-
-class EncargadoDeleteView(DeleteView):
-    model = Encargado
-    template_name = 'encargado/confirm_delete.html' # CORREGIDO
-    success_url = reverse_lazy('departamentoAPP:encargado_list')
 
 
 

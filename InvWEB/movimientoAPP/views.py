@@ -30,11 +30,9 @@ from weasyprint import HTML
 class StockGroupedListview(LoginRequiredMixin, ListView):
     """
     Esta vista agrupa el stock por departamento.
-    - Admin: Ve todos los departamentos.
-    - Gerente/Operador: Ve SOLO su departamento.
     """
-    model = Departamento
-    template_name = 'stock/list_grouped.html'
+    model = Departamento 
+    template_name = 'stock/list_grouped.html' 
     context_object_name = 'departamentos'
     
     def get_queryset(self):
@@ -42,8 +40,14 @@ class StockGroupedListview(LoginRequiredMixin, ListView):
         
         # Preparamos el queryset base
         base_qs = Departamento.objects.filter(activo=True).prefetch_related(
-            'encargado', 
-            'stock_items__producto'
+            
+            # --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+            # Borramos 'encargado', que ya no existe.
+            # Añadimos 'perfiles__user' (el related_name que creamos en usuario/models.py)
+            'perfiles__user', 
+            # --- FIN DE LA CORRECCIÓN ---
+            
+            'stock_items__producto' # 'stock_items' es el related_name
         )
         
         if perfil.es_admin:
@@ -67,8 +71,8 @@ class StockListview(LoginRequiredMixin, ListView):
         
         # Preparamos el queryset base
         base_qs = StockActual.objects.filter(cantidad__gt=0).select_related(
-            'producto', 
-            'departamento'
+            'perfiles__user',
+            'stock_items__producto'
         )
         
         if perfil.es_admin:

@@ -59,10 +59,7 @@
                                 Departamentos
                             </a>
 
-                            {% url 'departamentoAPP:encargado_list' as enc_list %}
-                            <a href="{{ enc_list }}" class="{% if request.path == enc_list %} block px-4 p-2 rounded-lg bg-indigo-600 text-white shadow-md {% else %} block px-4 py-1 rounded text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
-                                Encargados
-                            </a>
+                          
                         </div>
                     </div>
                 
@@ -140,6 +137,13 @@
                     Administración
                 </p>
 
+                {% url 'usuario:user_list' as user_list_url %}
+                <a href="{{ user_list_url }}" 
+                   class="{% if request.path == user_list_url %} flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md {% else %} flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
+                    <i class="fas fa-users-cog mr-3"></i>
+                    Gestionar Usuarios
+                </a>
+                
                 {% url 'usuario:registrar' as registrar_url %}
                 <a href="{{ registrar_url }}" 
                    class="{% if request.path == registrar_url %} flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md {% else %} flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">

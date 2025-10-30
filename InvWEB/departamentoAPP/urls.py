@@ -16,10 +16,10 @@ urlpatterns = [
 
  # --- URLs de Encargado ---
         # Estas rutas están bien, ya que colgarán de 'departamento/'
-    path('encargado/', views.EncargadoListview.as_view(), name= 'encargado_list'),
-    path('encargado/crear/', views.EncargadoCreateView.as_view(), name= 'encargado_crear'),
-    path('encargado/editar/<uuid:pk>/', views.EncargadoUpdateView.as_view(), name= 'encargado_editar'),
+   # path('encargado/', views.EncargadoListview.as_view(), name= 'encargado_list'),
+   # path('encargado/crear/', views.EncargadoCreateView.as_view(), name= 'encargado_crear'),
+   # path('encargado/editar/<uuid:pk>/', views.EncargadoUpdateView.as_view(), name= 'encargado_editar'),
         # Añadí la barra final (/) por consistencia
-     path('encargado/eliminar/<uuid:pk>/', views.EncargadoDeleteView.as_view(), name= 'encargado_eliminar'), 
+   #  path('encargado/eliminar/<uuid:pk>/', views.EncargadoDeleteView.as_view(), name= 'encargado_eliminar'), 
 
 ]

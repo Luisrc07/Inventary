@@ -66,3 +66,43 @@ class RegistroForm(forms.Form):
         # [cite_end]
 
         return user
+    
+class UserUpdateForm(forms.ModelForm):
+    """
+    Formulario para que el Admin edite el perfil de un usuario.
+    """
+    # 1. Añadimos el campo 'is_active' del modelo User
+    is_active = forms.BooleanField(
+        label="Usuario Activo (Puede iniciar sesión)",
+        required=False,
+        help_text="Desmarca esto para desactivar al usuario (soft delete)."
+    )
+
+    class Meta:
+        model = PerfilUsuario
+        fields = ['rol', 'departamento']
+
+    def __init__(self, *args, **kwargs):
+        """
+        Populamos el valor inicial de 'is_active'
+        desde el modelo User.
+        """
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.user:
+            # Asigna el estado actual (True/False) del User al checkbox
+            self.fields['is_active'].initial = self.instance.user.is_active
+
+    def save(self, commit=True):
+        """
+        Guardamos el Perfil Y el estado 'is_active' del User.
+        """
+        # 1. Guarda el PerfilUsuario (rol, departamento)
+        perfil = super().save(commit=commit)
+        
+        # 2. Actualiza y guarda el User (is_active)
+        if perfil.user:
+            perfil.user.is_active = self.cleaned_data['is_active']
+            if commit:
+                perfil.user.save()
+        
+        return perfil

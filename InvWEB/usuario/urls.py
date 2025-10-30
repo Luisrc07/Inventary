@@ -12,4 +12,7 @@ urlpatterns = [
     
     # URL para tu vista de registro
     path('registrar/', views.RegistroUsuarioView.as_view(), name='registrar'),
+
+    path('lista/', views.UserListView.as_view(), name='user_list'),
+    path('editar/<int:pk>/', views.UserUpdateView.as_view(), name='user_update'),
 ]

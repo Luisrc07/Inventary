@@ -1,5 +1,5 @@
 from django import forms 
-from departamentoAPP.models import Encargado, Departamento
+from departamentoAPP.models import Departamento
 from django.forms import TextInput, Textarea, Select, NumberInput, EmailInput
 from django.core.validators import RegexValidator
 
@@ -10,28 +10,6 @@ solo_numeros_validator = RegexValidator(
     regex=r'^\d+$', # Expresión regular que solo permite dígitos
     message="Este campo debe contener solo dígitos numéricos (0-9)."
 )
-class EncargadoForm(forms.ModelForm):
-    telefono = forms.CharField(
-        max_length=20,
-        required=True,
-        validators=[solo_numeros_validator],
-        # APLICACIÓN DIRECTA DEL WIDGET CON ESTILOS
-        widget=TextInput(attrs={
-            'class': tailwind_class,
-            'type': 'tel', # Mantiene el teclado numérico en móviles
-            'placeholder': 'Solo números'
-        })
-    )
-    class Meta:
-        model= Encargado
-        fields= ['nombres', 'apellidos', 'telefono', 'email', 'activo']
-        widgets = {
-            # ... (widgets para Encargado) ...
-            
-            'nombres': TextInput(attrs={'class': tailwind_class}),
-            'apellidos': TextInput(attrs={'class': tailwind_class}),
-            'email': EmailInput(attrs={'class': tailwind_class}),
-        }
 
 
 
@@ -39,14 +17,9 @@ class EncargadoForm(forms.ModelForm):
 class DepartamentoForm(forms.ModelForm):
     class Meta:
         model = Departamento
-        fields = ['nombre','descripcion','encargado','activo']
+        fields = ['nombre','descripcion','activo']
         widgets= { 
         'nombre':TextInput(attrs={'class':tailwind_class}),
         'descripcion': Textarea(attrs={'class': tailwind_class, 'rows':2}),
         'encargado':Select(attrs={'class':tailwind_class}),
         }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # 1. Filtrar el campo 'departamento_origen'
-        self.fields['encargado'].queryset = Encargado.objects.filter(activo=True)          

@@ -33,7 +33,9 @@ class PerfilUsuario(models.Model):
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
-        help_text="Departamento al que pertenece el usuario (si no es Admin)"
+        help_text="Departamento al que pertenece el usuario (si no es Admin)",
+        
+        related_name='perfiles'
     )
     
     # Tu campo de Rol

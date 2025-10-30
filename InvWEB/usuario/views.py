@@ -4,6 +4,10 @@ from django.urls import reverse_lazy
 from usuario.forms import RegistroForm
 # ¡Importamos los dos Mixins que necesitamos!
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.models import User # ¡Importa el modelo User!
+from .forms import RegistroForm, UserUpdateForm # ¡Importa el nuevo form!
+from .models import PerfilUsuario # ¡Importa PerfilUsuario!
+from django.views.generic import ListView, UpdateView # ¡Importa ListView y UpdateView!
 
 # Esta vista es para que un ADMIN registre a otros.
 class RegistroUsuarioView(LoginRequiredMixin, UserPassesTestMixin, FormView):
@@ -50,3 +54,36 @@ def root_redirect_view(request):
     # --- YA NO NECESITAS EL MÉTODO 'get' ---
     # El 'UserPassesTestMixin' se encarga de toda la seguridad
     # por lo que puedes BORRAR tu método get() anterior.
+
+# --- NUEVA VISTA: LISTA DE USUARIOS ---
+class UserListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = User
+    template_name = 'usuario/user_list.html' # Una nueva plantilla
+    context_object_name = 'usuarios'
+
+    def test_func(self):
+        # Solo Admins pueden ver esta lista
+        return self.request.user.perfil.es_admin
+
+    def get_queryset(self):
+        # Optimizamos la consulta para incluir el perfil
+        return User.objects.all().select_related('perfil__departamento')
+
+
+# --- NUEVA VISTA: EDITAR USUARIO ---
+class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = PerfilUsuario # ¡Editamos el Perfil!
+    form_class = UserUpdateForm
+    template_name = 'usuario/user_form.html' # Una nueva plantilla
+    success_url = reverse_lazy('usuario:user_list') # Vuelve a la lista
+
+    def test_func(self):
+        # Solo Admins pueden editar
+        return self.request.user.perfil.es_admin
+
+    def get_object(self, queryset=None):
+        """
+        Obtenemos el PerfilUsuario basándonos en la PK del *User* que viene de la URL.
+        """
+        user_pk = self.kwargs.get('pk')
+        return PerfilUsuario.objects.get(user__pk=user_pk)

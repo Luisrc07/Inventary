@@ -7,72 +7,84 @@
 <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Reporte de Stock Agrupado</h1>
 
 <div class="space-y-8">
-    
-    {% for depto in departamentos %}
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-            
-            <div class="bg-gray-50 p-4 border-b border-gray-200 flex justify-between items-center">
-                
-                <div>
-                    <h2 class="text-xl font-bold text-indigo-700">{{ depto.nombre }}</h2>
-                    {% if depto.encargado %}
-                        <p class="text-sm text-gray-600">
-                        Encargado: <span class="font-medium">{{ depto.encargado.get_full_name|default:depto.encargado }}</span>
-                        </p>
-                    {% endif %}
-                </div>
-                
-                <div>
-                    <a href="{% url 'movimientoAPP:reporte_stock_departamento_pdf' pk=depto.pk %}" 
-                       class="flex items-center bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-150 shadow-md text-sm"
-                       title="Descargar PDF de Stock">
-                       <i class="fas fa-file-pdf mr-2"></i> Reporte PDF
-                    </a>
-                </div>
-            </div>
-            <div class="p-4">
-                
-                {# Usamos 'stock_items.all' para coincidir con el related_name='stock_items' de models.py #}
-                {% with stock_items=depto.stock_items.all|dictsort:"producto.nombre" %}
-                    
-                    {% if stock_items %}
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full">
-                            <thead>
-                                <tr>
-                                    <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
-                                    <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
-                                    <th class="py-2 text-center text-xs font-medium text-gray-500 uppercase">Stock Paquetes</th>
-                                    <th class="py-2 text-center text-xs font-medium text-gray-500 uppercase">Total Unidades</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {% for item in stock_items %}
-                                {# Usamos la propiedad del modelo 'total_unidades' que creamos en models.py #}
-                                {% with total_unidades_calc=item.total_unidades|floatformat:2 %}
-                                    {% if item.cantidad > 0 %}
-                                    <tr class="border-b border-gray-100 hover:bg-gray-50">
-                                        <td class="py-3 px-2 text-sm font-medium text-gray-900">{{ item.producto.nombre }}</td>
-                                        <td class="py-3 px-2 text-sm text-gray-500">{{ item.producto.sku }}</td>
-                                        <td class="py-3 px-2 text-center text-lg font-bold text-gray-800">{{ item.cantidad|floatformat:2 }}</td>
-                                        <td class="py-3 px-2 text-center text-lg font-bold text-indigo-700">{{ total_unidades_calc }}</td>
-                                    </tr>
-                                    {% endif %}
-                                {% endwith %}
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <p class="text-center text-gray-500 py-4">Este departamento no tiene items de stock registrados.</p>
-                    {% endif %}
-                {% endwith %}
-            </div>
-            
-        </div>
-    {% empty %}
-        <p class="text-center text-gray-500 text-lg">No hay departamentos registrados en el sistema.</p>
-    {% endfor %}
+    
+    {% for depto in departamentos %}
+    
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            
+                        <div class="bg-gray-50 p-4 border-b border-gray-200 flex justify-between items-center">
+                
+                <div>
+                    <h2 class="text-xl font-bold text-indigo-700">{{ depto.nombre }}</h2>
+
+                                        {% with perfiles_asignados=depto.perfiles.all %}
+                    {% if perfiles_asignados %}
+                    <p class="text-sm text-gray-600">Usuarios Asignados:</p>
+                    <ul class="list-disc list-inside text-xs">
+                        {% for perfil in perfiles_asignados %}
+                            <li>
+                                <span class="font-medium">{{ perfil.user.username }}</span> ({{ perfil.get_rol_display }})
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-sm text-gray-500 italic">Sin usuarios asignados.</p>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+                
+                <div>
+                                        <a href="{% url 'movimientoAPP:reporte_stock_departamento_pdf' pk=depto.pk %}" 
+                       class="flex items-center bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 rounded-lg transition duration-150 shadow-md text-sm"
+                       title="Descargar PDF de Stock">
+                       <i class="fas fa-file-pdf mr-2"></i> Reporte PDF
+                    </a>
+                </div>
+            </div>
+            
+                        <div class="p-4">
+                
+                {% with stock_items=depto.stock_items.all|dictsort:"producto.nombre" %}
+                    
+                    {% if stock_items %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead>
+                                <tr>
+                                    <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                                    <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
+                                    <th class="py-2 text-center text-xs font-medium text-gray-500 uppercase">Stock Paquetes</th>
+                                    <th class="py-2 text-center text-xs font-medium text-gray-500 uppercase">Total Unidades</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in stock_items %}
+                                    {% with total_unidades_calc=item.total_unidades|floatformat:2 %}
+                                        {% if item.cantidad > 0 %}
+                                        <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                            <td class="py-3 px-2 text-sm font-medium text-gray-900">{{ item.producto.nombre }}</td>
+                                    	    <td class="py-3 px-2 text-sm text-gray-500">{{ item.producto.sku }}</td>
+                                	        <td class="py-3 px-2 text-center text-lg font-bold text-gray-800">{{ item.cantidad|floatformat:2 }}</td>
+        	                        	        <td class="py-3 px-2 text-center text-lg font-bold text-indigo-700">{{ total_unidades_calc }}</td>
+
+                                	    </tr>
+                                    {% endif %}
+
+{% endwith %}
+{% endfor %}
+</tbody>
+</table>
+ </div>
+ {% else %}
+ <p class="text-center text-gray-500 py-4">Este departamento no tiene items de stock registrados.</p>
+ {% endif %}
+ {% endwith %}
+ </div>
+ 
+</div>
+{% empty %}
+<p class="text-center text-gray-500 text-lg">No hay departamentos registrados en el sistema.</p>
+{% endfor %}
 
 </div>
 {% endblock %}
