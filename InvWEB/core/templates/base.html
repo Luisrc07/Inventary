@@ -107,6 +107,7 @@
 
                         <div id="submenu-movimiento" class="ml-6 mt-1 space-y-1 hidden">
                             {% url 'movimientoAPP:movimiento_list' as mov_list %}
+                           
                             <a href="{{ mov_list }}" 
                                class="{% if request.path == mov_list %} block px-4 p-2 rounded-lg bg-indigo-600 text-white shadow-md {% else %} block px-4 py-1 rounded text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
                                 Movimientos
