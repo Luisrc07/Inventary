@@ -1,12 +1,12 @@
-
+# En movimientoAPP/forms.py
 from django import forms
 from .models import Movimiento, Departamento
 from inventarioAPP.models import Producto, Categoria
-from django.forms import TextInput, Textarea, Select, NumberInput
-from django.forms import ModelChoiceField
-from django.forms import Select
+from django.forms import (
+    TextInput, Textarea, Select, NumberInput, ModelChoiceField
+)
 
-
+# Estilo de Tailwind
 tailwind_class = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500'
 
 class CategoriaModelChoiceField(ModelChoiceField):
@@ -14,19 +14,17 @@ class CategoriaModelChoiceField(ModelChoiceField):
         return obj.nombre
     
 class MovimientoForm(forms.ModelForm):
-    # 1. Campo de Categoría (Auxiliar)
+    # Campo auxiliar de Categoría
     categoria_select = CategoriaModelChoiceField(
         queryset=Categoria.objects.all(),
         label="Filtrar por Categoría",
         required=False,
         empty_label="--- Seleccione una Categoría ---",
-        # Asignamos el ID esperado por el JS
         widget=Select(attrs={'class': tailwind_class, 'id': 'select-categoria'})
     )
 
     class Meta:
         model = Movimiento
-        # Seleccionamos los campos que el usuario DEBE llenar
         fields = [
             'tipo',
             'producto',
@@ -42,15 +40,10 @@ class MovimientoForm(forms.ModelForm):
         widgets = {
             'tipo': Select(attrs={'class': tailwind_class, 'id': 'id_tipo'}),
             'producto': Select(attrs={'class': tailwind_class, 'id': 'select-producto'}),
-            # *** CAMBIO AQUÍ: 'step': 'any' para aceptar decimales ***
-
             'cantidad': NumberInput(attrs={'class': tailwind_class, 'min': '0.01', 'step': 'any'}), 
             'numero_factura': TextInput(attrs={'class': tailwind_class}), 
             'costo_unitario_bs': NumberInput(attrs={'class': tailwind_class, 'step': 'any', 'min': '0.01'}), 
             'tasa_cambio': NumberInput(attrs={'class': tailwind_class, 'step': 'any', 'min': '0.01'}),
-
-            
-            # Ya no asignamos IDs a los Selects, dejamos que Django lo haga y usamos el wrapper
             'proveedor': Select(attrs={'class': tailwind_class}), 
             'departamento_origen': Select(attrs={'class': tailwind_class}), 
             'departamento_destino': Select(attrs={'class': tailwind_class}), 
@@ -61,49 +54,77 @@ class MovimientoForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        # --- ¡INICIO DE LÓGICA DE PERMISOS! ---
+        # 1. Capturamos el 'user' que pasamos desde la vista
+        self.user = kwargs.pop('user', None)
+        # --- FIN DE LÓGICA DE PERMISOS! ---
+        
         super().__init__(*args, **kwargs)
 
-        # 2. Inicializar el campo 'producto' vacío
+        # 2. Inicializar el campo 'producto' vacío (como ya lo tenías)
         self.fields['producto'].queryset = Producto.objects.none()
         
-        # Identificador para la categoría a usar en el filtrado
         categoria_id_a_filtrar = None
         
-        # --- Lógica de Repoblación del Select 'producto' ---
-        
-        # Caso A: Edición de un objeto existente (Instancia con producto_id)
         if self.instance and self.instance.pk and self.instance.producto_id:
-            # Producto existe, podemos obtener su categoría
             producto_instance = self.instance.producto 
             categoria_id_a_filtrar = producto_instance.categoria_id
             
-        # Caso B: POST fallido (el formulario contiene datos)
         elif self.data and self.data.get('categoria_select'):
-            # Si el usuario seleccionó una categoría en el intento fallido, la usamos
             categoria_id_a_filtrar = self.data.get('categoria_select')
         
-        
-        # Si logramos identificar la categoría, filtramos el queryset
         if categoria_id_a_filtrar:
-            # Filtramos el queryset del producto por la categoría
             self.fields['producto'].queryset = Producto.objects.filter(
                 categoria_id=categoria_id_a_filtrar
             ).order_by('nombre')
-            
-            # Establecemos la categoría inicial en el campo auxiliar (para que se muestre seleccionada)
             self.initial['categoria_select'] = categoria_id_a_filtrar
-        
-        # --- Fin Lógica de Repoblación ---
+            
+        # 3. Filtrar los querysets de Departamento (Base)
+        queryset_departamentos = Departamento.objects.filter(activo=True)
+        self.fields['departamento_origen'].queryset = queryset_departamentos
+        self.fields['departamento_destino'].queryset = queryset_departamentos
 
-
-        # 1. Filtrar los campos de Departamento (Mantenido)
-        self.fields['departamento_origen'].queryset = Departamento.objects.filter(activo=True)
-        self.fields['departamento_destino'].queryset = Departamento.objects.filter(activo=True)
-
+        # --- ¡LÓGICA DE PERMISOS EN CAMPOS! ---
+        # 4. Si el usuario NO es admin, restringimos los querysets
+        if self.user and hasattr(self.user, 'perfil') and not self.user.perfil.es_admin:
+            depto_usuario = self.user.perfil.departamento
+            if depto_usuario:
+                # Un Gerente SÓLO puede sacar cosas de SU departamento
+                self.fields['departamento_origen'].queryset = Departamento.objects.filter(pk=depto_usuario.pk)
+                
+                # Un Gerente SÓLO puede ingresar cosas a SU departamento
+                self.fields['departamento_destino'].queryset = Departamento.objects.filter(pk=depto_usuario.pk)
+                
+                # Excepción: Para transferencias, sí pueden ELEGIR destino
+                # (Lo manejaremos en el 'clean' para más seguridad)
+                # Si quieres que puedan transferir a otros, descomenta la siguiente línea:
+                # self.fields['departamento_destino'].queryset = queryset_departamentos
 
     def clean(self):
         cleaned_data = super().clean()
         tipo = cleaned_data.get('tipo')
+        
+        # --- VALIDACIÓN DE ROLES ---
+        if self.user and hasattr(self.user, 'perfil') and not self.user.perfil.es_admin:
+            depto_usuario = self.user.perfil.departamento
+            
+            # Si un Gerente intenta hacer una TRANSFERENCIA,
+            # DEBE poder seleccionar un destino diferente.
+            # Sobreescribimos la restricción del __init__ SÓLO para este caso.
+            if tipo == 'TRANSFERENCIA':
+                self.fields['departamento_destino'].queryset = Departamento.objects.filter(activo=True)
+                
+                # Validamos que el destino no sea el mismo origen
+                destino_transferencia = cleaned_data.get('departamento_destino')
+                if destino_transferencia == depto_usuario:
+                    self.add_error('departamento_destino', 'No puede transferir stock a su mismo departamento.')
+            
+            # Validamos que un Gerente no haga ENTRADAS a otro depto
+            if tipo == 'ENTRADA':
+                if cleaned_data.get('departamento_destino') != depto_usuario:
+                    self.add_error('departamento_destino', 'Solo puede registrar ENTRADAS para su propio departamento.')
+        
+        # --- VALIDACIÓN DE CAMPOS (Tu lógica original, está perfecta) ---
         costo_unitario_bs = cleaned_data.get('costo_unitario_bs')
         tasa_cambio = cleaned_data.get('tasa_cambio')
         
@@ -112,22 +133,17 @@ class MovimientoForm(forms.ModelForm):
                 self.add_error('proveedor', 'Debe seleccionar un proveedor para las ENTRADAS.')
             if not cleaned_data.get('departamento_destino'):
                 self.add_error('departamento_destino', 'Debe seleccionar un departamento de destino.')
-                
-            # Validaciones de Costo
             if not costo_unitario_bs or costo_unitario_bs <= 0:
-                self.add_error('costo_unitario_bs', 'Debe ingresar el costo unitario del paquete en Bolívares.')
+                self.add_error('costo_unitario_bs', 'Debe ingresar el costo unitario (Bs.).')
             if not tasa_cambio or tasa_cambio <= 0:
-                self.add_error('tasa_cambio', 'Debe ingresar la tasa de cambio vigente (Bs./USD).')
-            
-            # El campo numero_factura debería ser obligatorio para ENTRADA
+                self.add_error('tasa_cambio', 'Debe ingresar la tasa de cambio (Bs./USD).')
             if not cleaned_data.get('numero_factura'):
-                self.add_error('numero_factura', 'Debe ingresar el número de factura o referencia para la ENTRADA.')
-                
-            # Aseguramos que los campos de origen/destino nulos de ENTRADA no den error en el modelo
+                self.add_error('numero_factura', 'Debe ingresar el N° de factura/referencia.')
             cleaned_data['departamento_origen'] = None
             
         elif tipo == 'SALIDA':
-            # ... (Tus validaciones para SALIDA) ...
+            if not cleaned_data.get('departamento_origen'):
+                self.add_error('departamento_origen', 'Debe seleccionar un departamento de origen.')
             cleaned_data['proveedor'] = None
             cleaned_data['departamento_destino'] = None
             cleaned_data['costo_unitario_bs'] = None
@@ -135,7 +151,15 @@ class MovimientoForm(forms.ModelForm):
             cleaned_data['numero_factura'] = None
             
         elif tipo == 'TRANSFERENCIA':
-            # ... (Tus validaciones para TRANSFERENCIA) ...
+            if not cleaned_data.get('departamento_origen'):
+                self.add_error('departamento_origen', 'Debe seleccionar un departamento de origen.')
+            if not cleaned_data.get('departamento_destino'):
+                self.add_error('departamento_destino', 'Debe seleccionar un departamento de destino.')
+            
+            # Validar que origen y destino no sean el mismo
+            if cleaned_data.get('departamento_origen') == cleaned_data.get('departamento_destino'):
+                self.add_error('departamento_destino', 'El origen y el destino no pueden ser el mismo departamento.')
+                
             cleaned_data['proveedor'] = None
             cleaned_data['costo_unitario_bs'] = None
             cleaned_data['tasa_cambio'] = None

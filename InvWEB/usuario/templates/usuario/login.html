@@ -1,0 +1,55 @@
+{% comment %}
+Plantilla para la vista 'LoginView' de Django
+{% endcomment %}
+{% load static %}
+    <link href="{% static 'css/dist/styles.css' %}" rel="stylesheet">
+
+
+<div class="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-lg shadow-md">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        Iniciar Sesión
+      </h2>
+      <p class="mt-2 text-center text-sm text-gray-600">
+        Ingresa a tu cuenta del sistema de inventario
+      </p>
+    </div>
+
+    <form class="mt-8 space-y-6" method="POST">
+      {% csrf_token %}
+
+      {% if form.errors %}
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error:</strong>
+        <span class="block sm:inline">Usuario o contraseña incorrectos. Por favor, intenta de nuevo.</span>
+      </div>
+      {% endif %}
+
+      <div class="rounded-md shadow-sm -space-y-px">
+        
+        <div>
+          <label for="id_username" class="block text-sm font-medium text-gray-700">Usuario</label>
+          <input id="id_username" name="username" type="text" autocomplete="username" required
+            class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            placeholder="Nombre de usuario">
+        </div>
+        
+        <div class="pt-4">
+          <label for="id_password" class="block text-sm font-medium text-gray-700">Contraseña</label>
+          <input id="id_password" name="password" type="password" autocomplete="current-password" required
+            class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            placeholder="Contraseña">
+        </div>
+
+      </div>
+
+      <div>
+        <button type="submit"
+          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Ingresar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

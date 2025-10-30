@@ -1,0 +1,115 @@
+{% load static %}
+<link href="{% static 'css/dist/styles.css' %}" rel="stylesheet">
+
+<div class="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-lg shadow-md">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        Registrar Nuevo Usuario
+      </h2>
+      <p class="mt-2 text-center text-sm text-gray-600">
+        Crea una cuenta y asigna un rol y departamento.
+      </p>
+    </div>
+
+    <form class="mt-8 space-y-6" method="POST">
+      {% csrf_token %}
+
+      {% if form.errors %}
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error al registrar:</strong>
+        <ul class="list-disc list-inside">
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <div class="pt-4">
+        <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.username.label }}</label>
+        {{ form.username }}
+      </div>
+      
+      <div class="pt-4">
+        <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.password.label }}</label>
+        {{ form.password }}
+      </div>
+      
+      <div class="pt-4">
+        <label for="{{ form.rol.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.rol.label }}</label>
+        {{ form.rol }}
+      </div>
+      
+      <div class="pt-4" id="departamento-wrapper">
+        <label for="{{ form.departamento.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.departamento.label }}</label>
+        {{ form.departamento }}
+      </div>
+
+      <div>
+        <button type="submit"
+          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Crear Usuario
+        </button>
+      </div>
+    </form>
+    </div>
+</div>
+
+<script>
+  // Lista de IDs de los campos de tu formulario
+  // (Asegúrate que los nombres 'username', 'password', 'rol', 'departamento'
+  // coincidan con los de tu 'forms.py')
+  const fieldIds = [
+    '{{ form.username.id_for_label }}',
+    '{{ form.password.id_for_label }}',
+    '{{ form.rol.id_for_label }}',
+    '{{ form.departamento.id_for_label }}'
+  ];
+  
+  const tailwindClasses = [
+    "w-full", "px-3", "py-2", "mt-1", "border", "border-gray-300", 
+    "rounded-lg", "focus:outline-none", "focus:ring-2", "focus:ring-indigo-500"
+  ];
+
+  document.addEventListener('DOMContentLoaded', function() {
+    fieldIds.forEach(id => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.classList.add(...tailwindClasses);
+      }
+    });
+  });
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // 1. Obtenemos los elementos
+    const rolSelect = document.getElementById('{{ form.rol.id_for_label }}');
+    const departamentoWrapper = document.getElementById('departamento-wrapper');
+    
+    // 2. Función que revisa el valor del Rol
+    function toggleDepartamentoVisibility() {
+      if (!rolSelect || !departamentoWrapper) return; // Seguridad
+      
+      const selectedRol = rolSelect.value;
+      
+      // Estos valores (GERENTE, OPERADOR) vienen de tu modelo 'PerfilUsuario'
+      if (selectedRol === 'GERENTE' || selectedRol === 'OPERADOR') {
+        departamentoWrapper.style.display = 'block'; // Muestra el campo
+      } else {
+        departamentoWrapper.style.display = 'none'; // Oculta el campo
+      }
+    }
+
+    // 3. Añadimos el 'listener' para cuando el usuario cambie el rol
+    if(rolSelect) {
+      rolSelect.addEventListener('change', toggleDepartamentoVisibility);
+    }
+    
+    // 4. Ejecutamos la función una vez al cargar la página (para ocultarlo de inicio si es necesario)
+    toggleDepartamentoVisibility();
+  });
+</script>

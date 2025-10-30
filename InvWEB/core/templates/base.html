@@ -130,7 +130,21 @@
 
             <hr class="mx-4 border-gray-700">
 
+            {% if request.user.perfil.es_admin %}
             <nav class="p-4 space-y-2">
+                
+            <hr class="mx-4 border-gray-700">
+            
+                <p class="text-xs font-semibold uppercase text-gray-400">
+                    Administración
+                </p>
+
+                {% url 'usuario:registrar' as registrar_url %}
+                <a href="{{ registrar_url }}" 
+                   class="{% if request.path == registrar_url %} flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md {% else %} flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
+                    <i class="fas fa-user-plus mr-3"></i>
+                    Registrar Usuario
+                </a>
                 <p class="text-xs font-semibold uppercase text-gray-400">
                     Información
                 </p>
@@ -145,15 +159,37 @@
                     Configuración
                 </a>
             </nav>
-
+            {% endif %}
             <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
-                <div class="flex items-center p-2 rounded-lg hover:bg-gray-700 cursor-pointer transition duration-150">
+                
+                {% if request.user.is_authenticated %}
+                <div class="flex items-center p-2">
                     <i class="fas fa-user-circle text-gray-400 text-2xl w-8 h-8 mr-3"></i>
                     <div>
-                        <p class="text-sm font-medium">Jane Doe</p>
-                        <p class="text-xs text-gray-400">Administrador</p>
+                        <p class="text-sm font-medium">{{ request.user.username }}</p>
+                        
+                        {% if request.user.perfil %}
+                        <p class="text-xs text-gray-400">{{ request.user.perfil.get_rol_display }}</p>
+                        {% endif %}
                     </div>
                 </div>
+                
+                {% url 'usuario:login' as logout_url %}
+                <a href="{{ logout_url }}" 
+                   class="flex items-center w-full p-2 mt-2 rounded-lg text-red-400 hover:bg-red-700 hover:text-white transition duration-150">
+                    <i class="fas fa-sign-out-alt mr-3"></i>
+                    Cerrar Sesión
+                </a>
+                
+                {% else %}
+                {% url 'usuario:login' as login_url %}
+                <a href="{{ login_url }}" 
+                   class="flex items-center w-full p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150">
+                    <i class="fas fa-sign-in-alt mr-3"></i>
+                    Iniciar Sesión
+                </a>
+                {% endif %}
+                
             </div>
         </aside>
 

@@ -3,6 +3,10 @@ from movimientoAPP import views
 
 app_name = 'movimientoAPP' 
 urlpatterns = [
+
+    path('inicio/', views.MovimientoListview.as_view(), name='inicio'),
+
+    
     #url movimientos
     path('movimiento/', views.MovimientoListview.as_view(), name= 'movimiento_list'),
     path('movimiento/crear/', views.MovimientoCreateView.as_view(), name= 'movimiento_crear'),

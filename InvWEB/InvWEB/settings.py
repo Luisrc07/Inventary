@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'departamentoAPP',
     'movimientoAPP',
     'proveedorAPP',
+    'usuario',
     'tailwind',
     'theme',
 ]
@@ -137,3 +138,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 TAILWIND_APP_NAME = 'theme'
 NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
+
+# En settings.py
+LOGIN_URL = 'usuario:login' # El nombre de nuestra futura URL de login
+LOGIN_REDIRECT_URL = 'movimientoAPP:inicio'  # A dónde ir después de un login exitoso (ej. 'inicio')
+LOGOUT_REDIRECT_URL = 'usuario:login' # A dónde ir después de cerrar sesión
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
+    # --- AÑADE TU MIDDLEWARE AQUÍ ---
+    # Debe ir después de AuthenticationMiddleware
+    'usuario.middleware.LoginRequiredMiddleware', 
+]
