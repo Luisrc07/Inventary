@@ -193,7 +193,7 @@ def generar_reporte_stock_pdf(request, pk):
     # 1. Obtener el departamento
     depto = get_object_or_404(
         Departamento.objects.prefetch_related(
-            'encargado', 
+            'perfiles__user', 
             'stock_items__producto'
         ), 
         pk=pk
