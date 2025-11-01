@@ -174,17 +174,32 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-    // Tu código JSON pasado desde la vista
+    // 1. OBTENER VARIABLES DESDE DJANGO (views.py)
+    // =================================================
+    // (Estos datos deben venir de 'get_context_data' en tu MovimientoCreateView)
+    
+    // productosData nos ayuda a calcular el total de unidades
     const productosData = JSON.parse('{{ productos_data_json|safe }}');
+    
+    // IS_ADMIN y USER_DEPTO_PK controlan la lógica de permisos
+    const IS_ADMIN = {{ is_admin|yesno:"true,false" }};
+    const USER_DEPTO_PK = "{{ user_depto_pk|default_if_none:'' }}"; 
+    
+    // IS_EDIT_MODE nos permite deshabilitar todo si solo estamos editando
+    const isEditMode = {{ is_edit_mode|yesno:"true,false" }};
+
 
     document.addEventListener('DOMContentLoaded', function() {
-        // --- Elementos Existentes (aseguramos que existen) ---
+        
+        // 2. OBTENER TODOS LOS ELEMENTOS DEL FORMULARIO
+        // =================================================
         const tipoField = document.getElementById('id_tipo');
         const productoField = document.getElementById('select-producto');
         const cantidadField = document.getElementById('id_cantidad');
         const proveedorWrapper = document.getElementById('field_proveedor_wrapper');
         const origenWrapper = document.getElementById('field_departamento_origen_wrapper');
         const destinoWrapper = document.getElementById('field_departamento_destino_wrapper');
+        const destinoSelect = document.getElementById('id_departamento_destino'); // <-- El <select> clave
         const numeroFacturaWrapper = document.getElementById('field_numero_factura_wrapper');
         const costoBsWrapper = document.getElementById('field_costo_unitario_bs_wrapper');
         const tasaCambioWrapper = document.getElementById('field_tasa_cambio_wrapper');
@@ -196,103 +211,161 @@
         const calculoWrapper = document.getElementById('calculo_wrapper');
         const unidadDisplay = document.getElementById('unidad_display');
         const totalDisplay = document.getElementById('total_display');
-        // ------------------------------------
-        
-        // --- Funciones de Cálculo y Toggling (MANTENIDAS) ---
-        function calcularTotal() { 
-            // ... (Tu lógica de calcularTotal sin cambios) ... 
-            const productoId = productoField.value;
-            const cantidadPaquetes = parseFloat(cantidadField.value) || 0;
-            const unidadMedida = parseFloat(productosData[productoId]) || 1.0;
 
-            if (productoId && cantidadPaquetes > 0 && unidadMedida > 0) {
-                if(calculoWrapper) calculoWrapper.style.display = 'block';
-                const totalUnidades = (cantidadPaquetes * unidadMedida); 
-                unidadDisplay.textContent = `${unidadMedida.toFixed(2)}`;
-                totalDisplay.textContent = `${totalUnidades.toFixed(2)}`;
-            } else {
-                if(calculoWrapper) calculoWrapper.style.display = 'none';
-                unidadDisplay.textContent = '...';
-                totalDisplay.textContent = '...';
-            }
-        }
-        
-        function toggleFields() { 
-            // ... (Tu lógica de toggleFields sin cambios, asegura visibilidad) ... 
-            const tipo = tipoField.value;
-
-            proveedorWrapper.style.display = 'none';
-            origenWrapper.style.display = 'none';
-            destinoWrapper.style.display = 'none';
+        // 3. LÓGICA DE MODO EDICIÓN
+        // =================================================
+        // Si la vista dice que es 'Modo Edición', deshabilita todo excepto Observaciones.
+        if (isEditMode) {
+            // (Esta lógica es del 'form.html' que me enviaste y es correcta)
+            if (tipoField) tipoField.disabled = true;
+            if (productoField) productoField.disabled = true;
+            if (cantidadField) cantidadField.disabled = true;
+            if (proveedorWrapper) proveedorWrapper.style.display = 'none';
+            if (origenWrapper) origenWrapper.style.display = 'none';
+            if (destinoWrapper) destinoWrapper.style.display = 'none';
             if (numeroFacturaWrapper) numeroFacturaWrapper.style.display = 'none';
             if (costoBsWrapper) costoBsWrapper.style.display = 'none';
             if (tasaCambioWrapper) tasaCambioWrapper.style.display = 'none';
             if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
+            if (calculoWrapper) calculoWrapper.style.display = 'none';
+            $('#select-categoria').prop('disabled', true);
+            $('#select-producto').prop('disabled', true);
+            return; // No ejecuta el resto del script (cálculos, toggling, etc.)
+        }
 
-            if (tipo === 'ENTRADA') {
-                proveedorWrapper.style.display = 'block';
-                destinoWrapper.style.display = 'block';
-                if (numeroFacturaWrapper) numeroFacturaWrapper.style.display = 'block';
-                if (costoBsWrapper) costoBsWrapper.style.display = 'block';
-                if (tasaCambioWrapper) tasaCambioWrapper.style.display = 'block';
-                origenWrapper.style.display = 'none'; 
-            } else if (tipo === 'SALIDA') {
-                origenWrapper.style.display = 'block';
-                destinoWrapper.style.display = 'none';
-            } else if (tipo === 'TRANSFERENCIA') {
-                origenWrapper.style.display = 'block';
-                destinoWrapper.style.display = 'block';
-            }
+        // 4. FUNCIONES DE CÁLCULO (Se ejecutan solo en Modo Creación)
+        // =================================================
+        function calcularTotal() { 
+            const productoId = productoField.value;
+            const cantidadPaquetes = parseFloat(cantidadField.value) || 0;
             
-            calcularTotal(); 
-            calcularCostoUSD();
+            if (productoId && cantidadPaquetes > 0 && productosData[productoId]) {
+                const unidadMedida = parseFloat(productosData[productoId]) || 1.0;
+                if(calculoWrapper) calculoWrapper.style.display = 'block';
+                const totalUnidades = (cantidadPaquetes * unidadMedida); 
+                if(unidadDisplay) unidadDisplay.textContent = `${unidadMedida.toFixed(2)}`;
+                if(totalDisplay) totalDisplay.textContent = `${totalUnidades.toFixed(2)}`;
+            } else {
+                if(calculoWrapper) calculoWrapper.style.display = 'none';
+            }
         }
         
         function calcularCostoUSD() { 
-            // ... (Tu lógica de calcularCostoUSD sin cambios) ... 
             const tipo = tipoField.value;
             if (tipo !== 'ENTRADA' || !costoBsField || !tasaCambioField) {
                 if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
                 return;
             }
-
-            const productoId = productoField.value;
             const costoUnitarioBs = parseFloat(costoBsField.value) || 0;
             const tasaCambio = parseFloat(tasaCambioField.value) || 0;
             const cantidadPaquetes = parseFloat(cantidadField.value) || 0;
-            const unidadMedida = parseFloat(productosData[productoId]) || 1.0; 
 
-            if (costoUnitarioBs > 0 && tasaCambio > 0 && cantidadPaquetes > 0 && unidadMedida > 0) {
+            if (costoUnitarioBs > 0 && tasaCambio > 0 && cantidadPaquetes > 0) {
                 if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'block';
-                const costoUnitarioBsPorUnidad = costoUnitarioBs / unidadMedida;
-                const refUnitarioUSD_por_unidad = costoUnitarioBsPorUnidad / tasaCambio;
-                const costoTotalUSD = (costoUnitarioBs / tasaCambio) * cantidadPaquetes;
-
-                refUnitarioUSDDisplay.textContent = `$${refUnitarioUSD_por_unidad.toFixed(4)}`;
-                costoTotalUSDDisplay.textContent = `$${costoTotalUSD.toFixed(2)}`;
+                const refUnitarioUSDPaquete = costoUnitarioBs / tasaCambio;
+                const costoTotalUSD = refUnitarioUSDPaquete * cantidadPaquetes;
+                if(refUnitarioUSDDisplay) refUnitarioUSDDisplay.textContent = `$${refUnitarioUSDPaquete.toFixed(2)}`;
+                if(costoTotalUSDDisplay) costoTotalUSDDisplay.textContent = `$${costoTotalUSD.toFixed(2)}`;
             } else {
                 if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
             }
         }
-        // ------------------------------------
-
-        // --- Listeners nativos  ---
-        tipoField.addEventListener('change', toggleFields);
         
-        // Listener importante: llama a los cálculos cuando cambia el producto
-        productoField.addEventListener('change', function() {
-            calcularTotal();
+        // 5. FUNCIÓN PRINCIPAL (Toggle y Lógica de Permisos)
+        // =================================================
+        function toggleFields() { 
+            if (isEditMode) return; // Doble chequeo
+            
+            const tipo = tipoField.value;
+
+            // Oculta todos los campos condicionales
+            if (proveedorWrapper) proveedorWrapper.style.display = 'none';
+            if (origenWrapper) origenWrapper.style.display = 'none';
+            if (destinoWrapper) destinoWrapper.style.display = 'none';
+            if (numeroFacturaWrapper) numeroFacturaWrapper.style.display = 'none';
+            if (costoBsWrapper) costoBsWrapper.style.display = 'none';
+            if (tasaCambioWrapper) tasaCambioWrapper.style.display = 'none';
+            if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
+
+            // --- ¡AQUÍ ESTÁ LA LÓGICA QUE PEDISTE! ---
+            
+            // A. Resetea el dropdown de destino (muestra todas las opciones)
+            if (destinoSelect) {
+                Array.from(destinoSelect.options).forEach(option => {
+                    option.style.display = 'block'; // Muestra todas
+                    option.disabled = false; // Habilita todas
+                });
+            }
+
+            // B. Muestra/Oculta campos y aplica filtros según el tipo
+            if (tipo === 'ENTRADA') {
+                if (proveedorWrapper) proveedorWrapper.style.display = 'block';
+                if (numeroFacturaWrapper) numeroFacturaWrapper.style.display = 'block'; 
+                if (destinoWrapper) destinoWrapper.style.display = 'block';
+                if (costoBsWrapper) costoBsWrapper.style.display = 'block';
+                if (tasaCambioWrapper) tasaCambioWrapper.style.display = 'block';
+
+                // --- ¡ESTA ES LA RESTRICCIÓN PARA ENTRADA! ---
+                if (!IS_ADMIN && USER_DEPTO_PK && destinoSelect) {
+                    Array.from(destinoSelect.options).forEach(option => {
+                        // Oculta todas las opciones EXCEPTO el departamento del usuario
+                        if (option.value !== USER_DEPTO_PK && option.value !== "") {
+                            option.style.display = 'none';
+                            option.disabled = true; // Deshabilita para Select2
+                        }
+                    });
+                    // Selecciona automáticamente su propio departamento
+                    destinoSelect.value = USER_DEPTO_PK;
+                }
+                
+            } else if (tipo === 'SALIDA') {
+                if (origenWrapper) origenWrapper.style.display = 'block';
+                
+            } else if (tipo === 'TRANSFERENCIA') {
+                if (origenWrapper) origenWrapper.style.display = 'block';
+                if (destinoWrapper) destinoWrapper.style.display = 'block';
+
+                // --- RESTRICCIÓN PARA GERENTE EN TRANSFERENCIA ---
+                if (!IS_ADMIN && USER_DEPTO_PK && destinoSelect) {
+                    Array.from(destinoSelect.options).forEach(option => {
+                        // Oculta SU PROPIO departamento (no puede transferir a sí mismo)
+                        if (option.value === USER_DEPTO_PK) {
+                            option.style.display = 'none';
+                            option.disabled = true; // Deshabilita para Select2
+                        }
+                    });
+                }
+            }
+            // --- FIN DE LA NUEVA LÓGICA ---
+            
+            // C. Refresca Select2 para que aplique los cambios visuales
+            $(destinoSelect).trigger('change');
+            
+            // D. Recalcula
+            calcularTotal(); 
             calcularCostoUSD();
-        });
+        }
+
+        // 6. ASIGNAR "LISTENERS"
+        // =================================================
+        if (tipoField) tipoField.addEventListener('change', toggleFields);
+        
+        if (productoField) {
+            productoField.addEventListener('change', function() {
+                calcularTotal();
+                calcularCostoUSD();
+            });
+        }
         
         if (costoBsField) costoBsField.addEventListener('input', calcularCostoUSD);
         if (tasaCambioField) tasaCambioField.addEventListener('input', calcularCostoUSD);
         
-        // Listener importante: llama a los cálculos cuando cambia la cantidad
-        cantidadField.addEventListener('input', function() {
-            calcularCostoUSD();
-            calcularTotal(); 
-        });
+        if (cantidadField) {
+            cantidadField.addEventListener('input', function() {
+                calcularCostoUSD();
+                calcularTotal(); 
+            });
+        }
         
         // Ejecutar al cargar la página
         toggleFields();

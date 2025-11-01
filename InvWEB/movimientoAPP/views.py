@@ -158,9 +158,17 @@ class MovimientoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         context = super().get_context_data(**kwargs)
         productos_data = {
             str(p.id): str(p.unidad_medida)
-            for p in Producto.objects.all() # Filtraremos por JS, traemos todos
+            for p in Producto.objects.filter(activo=True) # Filtraremos por JS, traemos todos
         }
         context['productos_data_json'] = json.dumps(productos_data)
+
+        user_depto_pk = None
+        if hasattr(self.request.user, 'perfil') and self.request.user.perfil.departamento:
+            user_depto_pk = self.request.user.perfil.departamento.pk
+            
+        context['user_depto_pk'] = user_depto_pk
+        context['is_admin'] = self.request.user.perfil.es_admin
+        
         return context
     
     def form_valid(self, form):
