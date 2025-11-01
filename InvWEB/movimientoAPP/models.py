@@ -37,6 +37,8 @@ class Movimiento(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
     observaciones = models.TextField(blank=True, null=True)
 
+    costo_unitario_usd = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True, verbose_name="Costo Unitario (USD) / Unidad"
+    )
     class Meta:
         verbose_name = "Movimiento"
         verbose_name_plural = "Movimientos"
@@ -53,7 +55,7 @@ class Movimiento(models.Model):
         return None
 
     @property
-    def ref_unitario_usd(self):
+    def ref_unitario_paquete_usd(self): # <--- CAMBIO DE NOMBRE (antes ref_unitario_usd)
         if self.costo_unitario_bs and self.tasa_cambio and self.tasa_cambio > 0:
             return self.costo_unitario_bs / self.tasa_cambio
         return None

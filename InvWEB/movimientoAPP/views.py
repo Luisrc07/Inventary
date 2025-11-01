@@ -177,6 +177,31 @@ class MovimientoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         """
         form.instance.usuario_registra = self.request.user
         
+        tipo = form.cleaned_data.get('tipo')
+        
+        # 2. Solo calculamos en ENTRADAS
+        if tipo == 'ENTRADA':
+            producto = form.cleaned_data.get('producto')
+            costo_bs = form.cleaned_data.get('costo_unitario_bs') # Costo por PAQUETE
+            tasa = form.cleaned_data.get('tasa_cambio')
+            
+            if (producto and producto.unidad_medida and producto.unidad_medida > 0 
+                and costo_bs and costo_bs > 0 and tasa and tasa > 0):
+                
+                # a. Costo del paquete en USD
+                costo_paquete_usd = costo_bs / tasa
+                
+                # b. Costo por UNIDAD (tu petición)
+                costo_unidad_usd = costo_paquete_usd / producto.unidad_medida
+                
+                # c. Guarda el valor en el nuevo campo del modelo
+                form.instance.costo_unitario_usd = costo_unidad_usd
+            else:
+                # Si falta algún dato, guarda NULL
+                form.instance.costo_unitario_usd = None
+        else:
+            # Si no es ENTRADA, no hay costo
+            form.instance.costo_unitario_usd = None
         try:
             return super().form_valid(form)
         except ValueError as e:

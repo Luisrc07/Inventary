@@ -29,7 +29,9 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destino</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tasa (Bs./$)</th> 
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Costo Total ($/Bs.)</th> 
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">REF Unitario ($/Bs.)</th> 
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">REF PAQ($/Bs.)</th> 
+                
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">REF UNID ($)</th>
                 
                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
             </tr>
@@ -79,24 +81,34 @@
                         N/A
                     {% endif %}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {% if mov.ref_unitario_usd %}
-                        {% with costo_total_usd=mov.ref_unitario_usd|mul:mov.cantidad %}
+
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-700">
+                    {% if mov.ref_unitario_paquete_usd %}
+                        {% with costo_total_usd=mov.ref_unitario_paquete_usd|mul:mov.cantidad %}
                         $<span class="font-bold text-indigo-700">{{ costo_total_usd|floatformat:2 }}</span>
                         {% endwith %}
                         {% if mov.costo_total_bs %}
-                        <span class="text-xs block text-gray-500">(Bs. {{ mov.costo_total_bs|floatformat:2 }})</span>
+                        <span class="text-xs block  text-gray-500">(Bs. {{ mov.costo_total_bs|floatformat:2 }})</span>
                         {% endif %}
                     {% else %}
                         N/A
                     {% endif %}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {% if mov.ref_unitario_usd %}
-                        $<span class="font-bold">{{ mov.ref_unitario_usd|floatformat:2 }}</span>
+
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-700">
+                    {% if mov.ref_unitario_paquete_usd %}
+                        $<span class="font-bold text-indigo-700">{{ mov.ref_unitario_paquete_usd|floatformat:2 }}</span>
                         {% if mov.costo_unitario_bs %}
                         <span class="text-xs block text-gray-500">(Bs. {{ mov.costo_unitario_bs|floatformat:2 }})</span>
                         {% endif %}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-700">
+                    {% if mov.costo_unitario_usd %}
+                        $<span class="font-bold">{{ mov.costo_unitario_usd|floatformat:4 }}</span>
                     {% else %}
                         N/A
                     {% endif %}
@@ -118,7 +130,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="10" class="px-6 py-4 text-center text-gray-500">No hay movimientos registrados.</td>
+                <td colspan="11" class="px-6 py-4 text-center text-gray-500">No hay movimientos registrados.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -147,46 +159,29 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     
-    // 1. Seleccionar todos los elementos que necesitamos
     const modal = document.getElementById('userInfoModal');
     const closeButton = document.getElementById('modalCloseBtn');
     const usernameDisplay = document.getElementById('modalUsername');
     const infoButtons = document.querySelectorAll('.userInfoBtn');
 
-    // 2. Función para abrir el modal
     function openModal(event) {
-        // Evita que el botón haga otra cosa
         event.preventDefault(); 
-        
-        // 'currentTarget' es el botón específico al que se le dio clic
         const button = event.currentTarget;
-        
-        // Saca el nombre de usuario del atributo 'data-username' que pusimos en el HTML
         const username = button.dataset.username;
-        
-        // Pone ese nombre dentro del modal
         usernameDisplay.textContent = username;
-        
-        // Muestra el modal
         modal.classList.remove('hidden');
     }
 
-    // 3. Función para cerrar el modal
     function closeModal() {
         modal.classList.add('hidden');
     }
 
-    // 4. Asignar los "escuchadores" de eventos
-    
-    // A cada botón de usuario en la tabla...
     infoButtons.forEach(button => {
         button.addEventListener('click', openModal);
     });
 
-    // Al botón de 'X' en el modal
     closeButton.addEventListener('click', closeModal);
     
-    // (Opcional) Cerrar el modal si se hace clic en el fondo oscuro
     modal.addEventListener('click', function(event) {
         if (event.target === modal) {
             closeModal();
