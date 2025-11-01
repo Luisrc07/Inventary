@@ -69,9 +69,25 @@ class RegistroForm(forms.Form):
     
 class UserUpdateForm(forms.ModelForm):
     """
-    Formulario para que el Admin edite el perfil de un usuario.
+    Formulario para que el Admin edite el perfil Y
+    los datos de login de un usuario.
     """
-    # 1. Añadimos el campo 'is_active' del modelo User
+    
+    # --- CAMPO AÑADIDO ---
+    username = forms.CharField(
+        label="Nombre de Usuario", 
+        required=True
+    )
+    
+    # --- CAMPO AÑADIDO ---
+    password = forms.CharField(
+        label="Nueva Contraseña", 
+        required=False, 
+        widget=forms.PasswordInput,
+        help_text="Dejar en blanco para no cambiar la contraseña."
+    )
+    
+    # Este campo ya lo tenías
     is_active = forms.BooleanField(
         label="Usuario Activo (Puede iniciar sesión)",
         required=False,
@@ -80,29 +96,56 @@ class UserUpdateForm(forms.ModelForm):
 
     class Meta:
         model = PerfilUsuario
-        fields = ['rol', 'departamento']
+        fields = ['rol', 'departamento'] # Campos del Perfil
 
     def __init__(self, *args, **kwargs):
         """
-        Populamos el valor inicial de 'is_active'
+        Populamos los valores iniciales de 'is_active' y 'username'
         desde el modelo User.
         """
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.user:
             # Asigna el estado actual (True/False) del User al checkbox
             self.fields['is_active'].initial = self.instance.user.is_active
+            
+            # --- LÍNEA AÑADIDA ---
+            # Asigna el nombre de usuario actual al campo de texto
+            self.fields['username'].initial = self.instance.user.username
+
+    def clean_username(self):
+        """
+        Valida que el nuevo nombre de usuario no esté ya en uso
+        por OTRO usuario.
+        """
+        username = self.cleaned_data['username']
+        
+        # Busca si existe otro usuario (excluyendo el actual) con ese nombre
+        if User.objects.filter(username=username).exclude(pk=self.instance.user.pk).exists():
+            raise forms.ValidationError("Este nombre de usuario ya está en uso por otra persona.")
+        return username
 
     def save(self, commit=True):
         """
-        Guardamos el Perfil Y el estado 'is_active' del User.
+        Guardamos el Perfil Y los campos actualizados del User.
         """
-        # 1. Guarda el PerfilUsuario (rol, departamento)
-        perfil = super().save(commit=commit)
+        # 1. Obtiene el PerfilUsuario (rol, depto) pero no lo guarda aún
+        perfil = super().save(commit=False) 
         
-        # 2. Actualiza y guarda el User (is_active)
-        if perfil.user:
-            perfil.user.is_active = self.cleaned_data['is_active']
-            if commit:
-                perfil.user.save()
+        # 2. Obtiene el objeto User relacionado
+        user = perfil.user 
+
+        # 3. Actualiza los campos del User desde nuestro formulario
+        user.is_active = self.cleaned_data['is_active']
+        user.username = self.cleaned_data['username']
+        
+        # 4. Revisa si se escribió una nueva contraseña
+        new_password = self.cleaned_data.get('password')
+        if new_password: # Solo si el campo no estaba vacío
+            user.set_password(new_password) # ¡Usa set_password() para hashear!
+        
+        # 5. Guarda ambos objetos si commit=True
+        if commit:
+            user.save()
+            perfil.save()
         
         return perfil

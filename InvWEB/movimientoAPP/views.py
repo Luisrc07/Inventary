@@ -8,6 +8,8 @@ from django.http import JsonResponse, HttpResponse # ¡HttpResponse añadido!
 from django.db.models import Q # ¡Importante para filtros!
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
+from django.views.decorators.cache import never_cache
+from django.utils.decorators import method_decorator
 
 # --- Importaciones de Modelos ---
 from .models import Movimiento, StockActual
@@ -27,6 +29,8 @@ from weasyprint import HTML
 # VISTAS DE STOCK (CON PERMISOS)
 # =========================================================================
 
+
+@method_decorator(never_cache, name='dispatch')
 class StockGroupedListview(LoginRequiredMixin, ListView):
     """
     Esta vista agrupa el stock por departamento.
@@ -55,7 +59,8 @@ class StockGroupedListview(LoginRequiredMixin, ListView):
         
         # Gerente/Operador ve solo su departamento
         return base_qs.filter(pk=perfil.departamento.pk)
-
+    
+@method_decorator(never_cache, name='dispatch')
 class StockListview(LoginRequiredMixin, ListView):
     """
     Vista de lista de stock individual.
@@ -85,6 +90,7 @@ class StockListview(LoginRequiredMixin, ListView):
 # VISTAS DE MOVIMIENTO (CON PERMISOS)
 # =========================================================================
 
+@method_decorator(never_cache, name='dispatch')
 class MovimientoListview(LoginRequiredMixin, ListView):
     """
     Vista de lista de movimientos.
@@ -121,6 +127,7 @@ class MovimientoListview(LoginRequiredMixin, ListView):
         context['perfil'] = self.request.user.perfil
         return context
 
+@method_decorator(never_cache, name='dispatch')
 class MovimientoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """
     Vista para crear un movimiento.
@@ -167,7 +174,8 @@ class MovimientoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         except ValueError as e:
             form.add_error(None, str(e))
             return self.form_invalid(form)
-
+        
+@method_decorator(never_cache, name='dispatch')
 class MovimientoUpdateView(LoginRequiredMixin, UpdateView):
     """
     Vista para editar SÓLO observaciones.

@@ -11,7 +11,7 @@
         Editar Usuario: {{ view.get_object.user.username }}
       </h2>
       <p class="mt-2 text-center text-sm text-gray-600">
-        Actualiza el rol, departamento y estado del usuario.
+        Actualiza el rol, departamento y datos de acceso del usuario.
       </p>
     </div>
 
@@ -32,6 +32,19 @@
       {% endif %}
 
       <div class="pt-4">
+        <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.username.label }}</label>
+        {{ form.username }}
+        {% if form.username.errors %}<p class="mt-1 text-xs text-red-500">{{ form.username.errors.as_text }}</p>{% endif %}
+      </div>
+
+      <div class="pt-4">
+        <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.password.label }}</label>
+        {{ form.password }}
+        {% if form.password.help_text %}<p class="mt-1 text-xs text-gray-500">{{ form.password.help_text }}</p>{% endif %}
+        {% if form.password.errors %}<p class="mt-1 text-xs text-red-500">{{ form.password.errors.as_text }}</p>{% endif %}
+      </div>
+
+      <div class="pt-4">
         <label for="{{ form.rol.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.rol.label }}</label>
         {{ form.rol }}
       </div>
@@ -43,7 +56,7 @@
       
       <div class="pt-4 flex items-center">
         {{ form.is_active }}
-        <label for="{{ form.is_active.id_for_label }}" class="ml-2 block text-sm font-medium text-gray-700">{{ form.is_active.label }}</V>
+        <label for="{{ form.is_active.id_for_label }}" class="ml-2 block text-sm font-medium text-gray-700">{{ form.is_active.label }}</label>
       </div>
       <p class="mt-1 text-xs text-gray-500">{{ form.is_active.help_text }}</p>
 
@@ -59,8 +72,10 @@
 </div>
 
 <script>
-  // Script 1: Añadir estilos de Tailwind
+  // Script 1: Añadir estilos de Tailwind (ACTUALIZADO)
   const fieldIds = [
+    '{{ form.username.id_for_label }}',     // <-- AÑADIDO
+    '{{ form.password.id_for_label }}',     // <-- AÑADIDO
     '{{ form.rol.id_for_label }}',
     '{{ form.departamento.id_for_label }}'
   ];

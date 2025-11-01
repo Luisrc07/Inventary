@@ -8,8 +8,11 @@ from django.contrib.auth.models import User # ¡Importa el modelo User!
 from .forms import RegistroForm, UserUpdateForm # ¡Importa el nuevo form!
 from .models import PerfilUsuario # ¡Importa PerfilUsuario!
 from django.views.generic import ListView, UpdateView # ¡Importa ListView y UpdateView!
+from django.views.decorators.cache import never_cache
+from django.utils.decorators import method_decorator
 
 # Esta vista es para que un ADMIN registre a otros.
+@method_decorator(never_cache, name='dispatch')
 class RegistroUsuarioView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     template_name = 'usuario/registro.html'
     form_class = RegistroForm
@@ -56,6 +59,7 @@ def root_redirect_view(request):
     # por lo que puedes BORRAR tu método get() anterior.
 
 # --- NUEVA VISTA: LISTA DE USUARIOS ---
+@method_decorator(never_cache, name='dispatch')
 class UserListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = User
     template_name = 'usuario/user_list.html' # Una nueva plantilla
@@ -71,6 +75,7 @@ class UserListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
 
 # --- NUEVA VISTA: EDITAR USUARIO ---
+@method_decorator(never_cache, name='dispatch')
 class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = PerfilUsuario # ¡Editamos el Perfil!
     form_class = UserUpdateForm
