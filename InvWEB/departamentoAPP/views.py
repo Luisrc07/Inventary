@@ -18,9 +18,9 @@ class DepartamentoListView(LoginRequiredMixin, ListView):
     template_name = 'departamento/list.html'
     context_object_name = 'departamentos'
 
-    def get_queryset(self):
+   
         # ¡CORRECCIÓN! Solo mostrar departamentos que estén activos.
-        return Departamento.objects.filter(activo=True)
+      
 
     def get_context_data(self, **kwargs):
         # Pasa el perfil a la plantilla para ocultar el botón "Crear"
