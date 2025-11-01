@@ -1,44 +1,97 @@
 {% extends 'base.html' %} 
 
-{% block tittle %}Eliminar Encargado{% endblock %}
+{% block tittle %}Desactivar Departamento{% endblock %}
 
 {% block content %}
-<!-- Contenedor Centrado y con Sombra -->
 <div class="bg-white p-8 rounded-xl shadow-lg max-w-lg mx-auto">
 
     <h1 class="text-3xl font-bold text-gray-800 mb-4 border-b pb-2">
-        Confirmar Eliminación
+        Confirmar Desactivación
     </h1>
 
-    <p class="text-lg text-gray-700 mb-6">
-        ¿Estás seguro de que deseas eliminar al encargado: 
-        <strong class="text-red-600">"{{ object.nombre }}"</strong>?
-    </p>
+    {% if is_admin %}
 
-    <!-- Advertencia de Dependencias -->
-    <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 mb-6 rounded-md" role="alert">
-        <p class="font-bold text-sm">¡Atención!</p>
-        <p class="text-sm">Si eliminas a este encargado, cualquier departamento que dependa de él quedará sin encargado asignado.</p>
-    </div>
+        <p class="text-lg text-gray-700 mb-6">
+            ¿Estás seguro de que deseas **desactivar** (eliminación lógica) el departamento: 
+            <strong class="text-red-600">"{{ object.nombre }}"</strong>?
+        </p>
 
-    <form method="post" class="flex justify-start space-x-4">
-        {% csrf_token %}
+        {% if puede_desactivar %}
+            <div class="p-4 bg-green-50 border-l-4 border-green-400 text-green-700 mb-6 rounded-md" role="alert">
+                <p class="font-bold text-sm">¡Listo para desactivar!</p>
+                <p class="text-sm">Este departamento no tiene usuarios ni stock activo asociado. Es seguro desactivarlo.</p>
+            </div>
+
+            <form method="post" class="flex justify-start space-x-4">
+                {% csrf_token %}
+                <button type
+="submit" 
+                        class="bg-red-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-red-700 transition duration-150 shadow-md flex items-center">
+                    <i class="fas fa-toggle-off mr-2"></i>
+                    Sí, Desactivar
+                </button>
+                <a href="{% url 'departamentoAPP:departamento_list' %}" 
+                   class="text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </a>
+            </form>
         
-        <!-- Botón de Confirmación (Rojo) -->
-        <button type="submit" 
-                class="bg-red-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-red-700 transition duration-150 shadow-md flex items-center">
-            <i class="fas fa-trash-alt mr-2"></i>
-            Sí, Eliminar Permanentemente
-        </button>
+        {% else %}
+            <div classS="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 mb-6 rounded-md" role="alert">
+                <p class="font-bold text-sm">¡Desactivación Bloqueada!</p>
+                <p class="text-sm">No puedes desactivar este departamento porque todavía tiene dependencias activas:</p>
+                <ul class="list-disc list-inside ml-4 mt-2 text-sm">
+                    {% if perfiles_asociados > 0 %}
+                    <li><strong>{{ perfiles_asociados }}</strong> usuarios asignados (Gerentes/Operadores).</li>
+                    {% endif %}
+                    {% if stock_asociado > 0 %}
+                    <li><strong>{{ stock_asociado }}</strong> productos con stock activo.</li>
+                    {% endif %}
+                </ul>
+                <p class="text-sm mt-2">Por favor, reasigna los usuarios y/o vacía el stock de este departamento antes de desactivarlo.</p>
+            </div>
+
+            <div class="flex justify-start space-x-4">
+                <button type="button" disabled 
+                        class="bg-gray-400 text-white font-semibold px-6 py-2 rounded-lg cursor-not-allowed flex items-center">
+                    <i class="fas fa-lock mr-2"></i>
+                    Desactivación Bloqueada
+                </button>
+                <a href="{% url 'departamentoAPP:departamento_list' %}" 
+                   class="text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Volver
+                </a>
+            </div>
+        {% endif %}
+
+    {% else %}
+
+        <p class="text-lg text-gray-700 mb-6">
+            No puedes desactivar el departamento: 
+            <strong class="text-gray-900">"{{ object.nombre }}"</strong>.
+        </p>
         
-        <!-- Botón de Cancelar -->
-        {% url 'departamentoAPP:departamento_list' as cancel_url %}
-        <a href="{{ cancel_url }}" 
-           class="text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">
-            <i class="fas fa-times mr-2"></i>
-            Cancelar
-        </a>
-    </form>
+        <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 mb-6 rounded-md" role="alert">
+            <p class="font-bold text-sm">¡Acción Bloqueada!</p>
+            <p class="text-sm">Para desactivar departamentos debes ser Administrador.</p>
+        </div>
+
+        <div class="flex justify-start space-x-4">
+            <button type="button" disabled 
+                    class="bg-gray-400 text-white font-semibold px-6 py-2 rounded-lg cursor-not-allowed flex items-center">
+                <i class="fas fa-lock mr-2"></i>
+                Acción Bloqueada
+            </button>
+            <a href="{% url 'departamentoAPP:departamento_list' %}" 
+               class="text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Volver
+            </a>
+        </div>
+
+    {% endif %}
     
 </div>
 {% endblock %}
