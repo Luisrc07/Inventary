@@ -4,6 +4,7 @@ from departamentoAPP.models import Departamento
 from inventarioAPP.models import Producto
 from proveedorAPP.models import Proveedor
 from django.core.validators import MinValueValidator
+from django.contrib.auth.models import User
 
 # =========================================================================
 # MODELO MOVIMIENTO (CORRECTO - USANDO DECIMAL)
@@ -21,6 +22,9 @@ class Movimiento(models.Model):
     
     # Este campo ya es Decimal, lo cual es correcto.
     cantidad = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.01)], verbose_name="Cantidad (Paquetes)")
+    
+    # No borra el movimiento si se borra el usuario
+    usuario_registra = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,verbose_name="Usuario que registra")
 
     proveedor = models.ForeignKey(Proveedor, on_delete=models.PROTECT, blank=True, null=True)
     departamento_origen = models.ForeignKey(Departamento, on_delete=models.PROTECT, related_name='movimientos_origen', blank=True, null=True)

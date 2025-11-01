@@ -93,7 +93,7 @@ class MovimientoForm(forms.ModelForm):
                 self.fields['departamento_origen'].queryset = Departamento.objects.filter(pk=depto_usuario.pk)
                 
                 # Un Gerente SÓLO puede ingresar cosas a SU departamento
-                self.fields['departamento_destino'].queryset = Departamento.objects.filter(pk=depto_usuario.pk)
+                
                 
                 # Excepción: Para transferencias, sí pueden ELEGIR destino
                 # (Lo manejaremos en el 'clean' para más seguridad)

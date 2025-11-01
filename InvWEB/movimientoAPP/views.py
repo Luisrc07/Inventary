@@ -160,6 +160,8 @@ class MovimientoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         """
         Capturamos el ValueError del modelo (ej. "No hay stock").
         """
+        form.instance.usuario_registra = self.request.user
+        
         try:
             return super().form_valid(form)
         except ValueError as e:
