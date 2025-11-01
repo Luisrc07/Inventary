@@ -1,11 +1,12 @@
+{% extends 'base.html' %} 
 
 {% load static %}
 
-
+{% block tittle %}{% if object %}Registrar Usuario{% else %}Crear Movimiento{% endif %}{% endblock %}
 <link href="{% static 'css/dist/styles.css' %}" rel="stylesheet">
 
 
-
+{% block content %}
 <div class="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
   <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-lg shadow-md">
     <div>
@@ -59,7 +60,7 @@
           Crear Usuario
         </button>
 
-        {% url 'movimientoAPP:inicio' as cancel_url %}
+        {% url 'usuario:user_list' as cancel_url %}
             <a href="{{ cancel_url }}" 
                class="ml-4 text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">
                 <i class="fas fa-times mr-2"></i>
@@ -125,3 +126,5 @@
     toggleDepartamentoVisibility();
   });
 </script>
+
+{% endblock %}
