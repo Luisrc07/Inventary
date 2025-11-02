@@ -2,6 +2,20 @@
 {% load matematicas %}
 {% block tittle %}Historial de Movimientos{% endblock %}
 
+{% block head_includes %}
+<style>
+    .price-toggle {
+        cursor: pointer;
+        user-select: none; /* Evita que el texto se seleccione al hacer clic */
+    }
+    .price-toggle:hover .font-bold {
+        /* Un sutil cambio de color al pasar el ratón */
+        color: #4338CA; /* Un índigo un poco más oscuro */
+        text-decoration: underline dotted;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Historial de Movimientos</h1>
 
@@ -29,9 +43,8 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destino</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tasa (Bs./$)</th> 
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Costo Total ($/Bs.)</th> 
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">REF PAQ($/Bs.)</th> 
                 
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">REF UNID ($)</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">REF Unitario ($/Bs.) PAQ/UNID</th> 
                 
                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
             </tr>
@@ -81,7 +94,6 @@
                         N/A
                     {% endif %}
                 </td>
-
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-700">
                     {% if mov.ref_unitario_paquete_usd %}
                         {% with costo_total_usd=mov.ref_unitario_paquete_usd|mul:mov.cantidad %}
@@ -95,20 +107,24 @@
                     {% endif %}
                 </td>
 
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-700">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium price-toggle" 
+                    title="Clic para ver precio por unidad"
+                    
+                    data-paq-price="$ {{ mov.ref_unitario_paquete_usd|floatformat:2 }}"
+                    data-paq-subtext="(Bs. {{ mov.costo_unitario_bs|floatformat:2 }})"
+                    
+                    data-unit-price="$ {{ mov.costo_unitario_usd|floatformat:4 }}"
+                    data-unit-subtext="(por UNIDAD)">
+                    
                     {% if mov.ref_unitario_paquete_usd %}
-                        $<span class="font-bold text-indigo-700">{{ mov.ref_unitario_paquete_usd|floatformat:2 }}</span>
+                        <span class="font-bold text-indigo-700">
+                            {{ mov.ref_unitario_paquete_usd|floatformat:2 }}
+                        </span>
                         {% if mov.costo_unitario_bs %}
-                        <span class="text-xs block text-gray-500">(Bs. {{ mov.costo_unitario_bs|floatformat:2 }})</span>
+                        <span class="text-xs block text-gray-500">
+                            (Bs. {{ mov.costo_unitario_bs|floatformat:2 }})
+                        </span>
                         {% endif %}
-                    {% else %}
-                        N/A
-                    {% endif %}
-                </td>
-                
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-700">
-                    {% if mov.costo_unitario_usd %}
-                        $<span class="font-bold">{{ mov.costo_unitario_usd|floatformat:4 }}</span>
                     {% else %}
                         N/A
                     {% endif %}
@@ -130,7 +146,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="11" class="px-6 py-4 text-center text-gray-500">No hay movimientos registrados.</td>
+                <td colspan="10" class="px-6 py-4 text-center text-gray-500">No hay movimientos registrados.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -159,11 +175,11 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     
+    // --- Lógica del Modal (Sin cambios) ---
     const modal = document.getElementById('userInfoModal');
     const closeButton = document.getElementById('modalCloseBtn');
     const usernameDisplay = document.getElementById('modalUsername');
     const infoButtons = document.querySelectorAll('.userInfoBtn');
-
     function openModal(event) {
         event.preventDefault(); 
         const button = event.currentTarget;
@@ -171,22 +187,60 @@ document.addEventListener('DOMContentLoaded', function() {
         usernameDisplay.textContent = username;
         modal.classList.remove('hidden');
     }
-
     function closeModal() {
         modal.classList.add('hidden');
     }
-
     infoButtons.forEach(button => {
         button.addEventListener('click', openModal);
     });
-
     closeButton.addEventListener('click', closeModal);
-    
     modal.addEventListener('click', function(event) {
         if (event.target === modal) {
             closeModal();
         }
     });
+
+    // =======================================================
+    // ¡NUEVA LÓGICA PARA EL PRECIO PAQ/UNID!
+    // =======================================================
+    
+    // 1. Seleccionamos TODAS las celdas que tengan la clase '.price-toggle'
+    const priceToggleCells = document.querySelectorAll('.price-toggle');
+
+    // 2. A cada una de esas celdas, le agregamos un 'escuchador' de clics
+    priceToggleCells.forEach(cell => {
+        cell.addEventListener('click', function() {
+            
+            // 3. Dentro de la celda clickeada, encontramos los spans de texto
+            const mainSpan = this.querySelector('.font-bold');
+            const subSpan = this.querySelector('.text-xs');
+
+            // Si no hay spans (ej. N/A), no hacemos nada
+            if (!mainSpan || !subSpan) return;
+
+            // 4. Leemos los 4 valores que guardamos en los atributos 'data-'
+            const paqPrice = this.dataset.paqPrice;
+            const paqSub = this.dataset.paqSubtext;
+            const unitPrice = this.dataset.unitPrice;
+            const unitSub = this.dataset.unitSubtext;
+
+            // 5. Comparamos el texto ACTUAL con el de PAQUETE
+            if (mainSpan.textContent.trim() === paqPrice) {
+                // Si ES el de paquete, lo cambiamos al de UNIDAD
+                mainSpan.textContent = unitPrice;
+                mainSpan.classList.remove('text-indigo-700');
+                mainSpan.classList.add('text-green-700'); // Color verde para diferenciar
+                subSpan.textContent = unitSub;
+            } else {
+                // Si NO es el de paquete (o sea, es el de unidad), lo regresamos al de PAQUETE
+                mainSpan.textContent = paqPrice;
+                mainSpan.classList.remove('text-green-700');
+                mainSpan.classList.add('text-indigo-700'); // Color índigo original
+                subSpan.textContent = paqSub;
+            }
+        });
+    });
+
 });
 </script>
 
