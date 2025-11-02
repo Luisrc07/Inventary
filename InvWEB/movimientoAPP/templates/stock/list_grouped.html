@@ -23,12 +23,12 @@
                     <ul class="list-disc list-inside text-xs">
                     {% for perfil in perfiles_asignados %}
                         <li>
-                        <span class="font-medium">{{ perfil.user.username }}</span> ({{ perfil.get_rol_display }})
+                        <span class="font-medium  text-gray-700">{{ perfil.user.username }} ({{ perfil.get_rol_display }})</span> 
                         </li>
                     {% endfor %}
                     </ul>
                     {% else %}
-                    <p class="text-sm text-gray-500 italic">Sin usuarios asignados.</p>
+                    <p class="text-sm text-gray-700 italic">Sin usuarios asignados.</p>
                     {% endif %}
                     {% endwith %}
                     </div>

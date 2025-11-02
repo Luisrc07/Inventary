@@ -4,6 +4,23 @@
 
 {% block head_includes %}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<style>
+    /* Forzamos el color del texto en los resultados de Select2 
+      para que sea negro y legible sobre el fondo blanco.
+    */
+    .select2-results__option {
+        color: black; 
+    }
+
+    /* Opcional, pero recomendado: 
+      Aseguramos que el texto de la opción seleccionada (hover)
+      sea blanco sobre el fondo azul de Select2.
+    */
+    .select2-results__option--highlighted {
+        color: white;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -39,7 +56,7 @@
             </label>
             {{ form.categoria_select }} 
             {% if form.categoria_select.errors %}
-                <p class="mt-1 text-sm text-red-600">{{ form.categoria_select.errors.as_text }}</p>
+                <p class="mt-1 text-sm text-red-600 ">{{ form.categoria_select.errors.as_text }}</p>
             {% endif %}
         </div>
 
@@ -49,7 +66,7 @@
             </label>
             {{ form.producto }} 
             {% if form.producto.errors %}
-                <p class="mt-1 text-sm text-red-600">{{ form.producto.errors.as_text }}</p>
+                <p class="mt-1 text-sm text-red-600 ">{{ form.producto.errors.as_text }}</p>
             {% endif %}
         </div>
 
