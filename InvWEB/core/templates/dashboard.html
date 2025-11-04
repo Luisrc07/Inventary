@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+{% load humanize %} {% load static %}
+
+{% block tittle %}Dashboard{% endblock %}
+
+{% block head_includes %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-800">
+        ¡Hola, {{ request.user.first_name|default:request.user.username }}!
+    </h1>
+    <p class="text-lg text-gray-600">Bienvenido a tu panel de control.</p>
+</div>
+
+<div class="mb-6 flex flex-wrap gap-3">
+    {% if request.user.perfil.es_admin or request.user.perfil.es_gerente %}
+    <a href="{% url 'movimientoAPP:movimiento_crear' %}"
+        class="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md">
+        <i class="fas fa-plus mr-2"></i>
+        Crear Movimiento
+    </a>
+    {% endif %}
+
+    <a href="{% url 'movimientoAPP:stock_list_grouped' %}"
+        class="flex items-center bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md">
+        <i class="fas fa-boxes mr-2"></i>
+        Ver Stock General
+    </a>
+
+    </div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+    <div
+        class="p-6 rounded-xl shadow-lg {% if kpi_alertas_stock > 0 %}bg-red-50 border-2 border-red-500{% else %}bg-green-50 border-2 border-green-400{% endif %}">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium {% if kpi_alertas_stock > 0 %}text-red-800{% else %}text-green-800{% endif %} uppercase tracking-wider">
+                    Alertas de Stock</p>
+                <p class="text-4xl font-bold {% if kpi_alertas_stock > 0 %}text-red-700{% else %}text-green-700{% endif %}">
+                    {{ kpi_alertas_stock|default:"0" }}
+                </p>
+            </div>
+            <div
+                class="text-4xl {% if kpi_alertas_stock > 0 %}text-red-400{% else %}text-green-400{% endif %}">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Paquetes en Stock</p>
+                <p class="text-4xl font-bold text-indigo-700">
+                    {{ kpi_total_paquetes|floatformat:2|default:"0"|intcomma }}
+                </p>
+            </div>
+            <div class="text-4xl text-indigo-400">
+                <i class="fas fa-box-open"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Movimientos (Hoy)</p>
+                <p class="text-4xl font-bold text-indigo-700">
+                    {{ kpi_movs_hoy|default:"0" }}
+                </p>
+            </div>
+            <div class="text-4xl text-indigo-400">
+                <i class="fas fa-truck-loading"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    {% if is_admin %}Departamentos Activos{% else %}Departamento{% endif %}</p>
+                <p class="text-4xl font-bold text-indigo-700">
+                    {{ kpi_deptos_activos|default:"0" }}
+                </p>
+            </div>
+            <div class="text-4xl text-indigo-400">
+                <i class="fas fa-building"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+    <div class="lg:col-span-2 space-y-8">
+
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
+                <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                Alertas de Stock Mínimo
+            </h2>
+            {% if kpi_alertas_stock > 0 %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                            {% if is_admin %}
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
+                            {% endif %}
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Actual</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Mínimo</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in alertas_stock %}
+                        <tr>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.producto.nombre }}</td>
+                            {% if is_admin %}
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{{ item.departamento.nombre }}</td>
+                            {% endif %}
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold text-red-600">{{ item.cantidad|floatformat:2 }} paq.</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-500">{{ item.producto.stock_minimo|floatformat:2 }} paq.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-4 text-center bg-green-50 rounded-lg">
+                <p class="font-medium text-green-700">¡Excelente! No hay productos por debajo del stock mínimo.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if is_admin %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Stock por Departamento</h2>
+                <div class="h-64"> <canvas id="chartDeptos"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Top 5 Productos (Global)</h2>
+                <div class="h-64">
+                    <canvas id="chartTopProductos"></canvas>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <div classL="lg:col-span-1">
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
+                <i class="fas fa-history text-indigo-500 mr-2"></i>
+                Actividad Reciente
+            </h2>
+            <ul class="space-y-4">
+                {% for mov in actividad_reciente %}
+                <li class="flex items-start space-x-3">
+                    <div>
+                        {% if mov.tipo == 'ENTRADA' %}
+                        <span class="flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-600">
+                            <i class="fas fa-arrow-down"></i>
+                        </span>
+                        {% elif mov.tipo == 'SALIDA' %}
+                        <span class="flex items-center justify-center h-8 w-8 rounded-full bg-red-100 text-red-600">
+                            <i class="fas fa-arrow-up"></i>
+                        </span>
+                        {% else %}
+                        <span class="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-600">
+                            <i class="fas fa-exchange-alt"></i>
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-900">
+                            {{ mov.get_tipo_display }} de {{ mov.producto.nombre }}
+                        </p>
+                        <p class="text-sm text-gray-600">
+                            <span class="font-bold">{{ mov.cantidad|floatformat:2 }} paq.</span>
+                            {% if mov.tipo == 'ENTRADA' %}
+                                a <span class="font-medium">{{ mov.departamento_destino.nombre }}</span>
+                            {% elif mov.tipo == 'SALIDA' %}
+                                de <span class="font-medium">{{ mov.departamento_origen.nombre }}</span>
+                            {% else %}
+                                de <span class="font-medium">{{ mov.departamento_origen.nombre }}</span>
+                                a <span class="font-medium">{{ mov.departamento_destino.nombre }}</span>
+                            {% endif %}
+                        </p>
+                        <p class="text-xs text-gray-400">{{ mov.fecha|timesince }} atrás</p>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="p-4 text-center bg-gray-50 rounded-lg">
+                    <p class="text-sm text-gray-500">No hay movimientos recientes.</p>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+{% if is_admin %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // --- Gráfico 1: Stock por Departamento (Dona) ---
+        const deptoCtx = document.getElementById('chartDeptos');
+        if (deptoCtx) {
+            const deptoLabels = {{ chart_depto_labels|safe }};
+            const deptoData = {{ chart_depto_data|safe }};
+
+            new Chart(deptoCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: deptoLabels,
+                    datasets: [{
+                        label: 'Paquetes en Stock',
+                        data: deptoData,
+                        backgroundColor: [
+                            'rgba(79, 70, 229, 0.7)',  // Indigo
+                            'rgba(30, 64, 175, 0.7)',  // Blue
+                            'rgba(14, 165, 233, 0.7)', // Sky
+                            'rgba(16, 185, 129, 0.7)', // Emerald
+                            'rgba(245, 158, 11, 0.7)', // Amber
+                            'rgba(239, 68, 68, 0.7)',  // Red
+                        ],
+                        borderColor: '#ffffff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Gráfico 2: Top 5 Productos (Barra) ---
+        const prodCtx = document.getElementById('chartTopProductos');
+        if (prodCtx) {
+            const prodLabels = {{ chart_top_productos_labels|safe }};
+            const prodData = {{ chart_top_productos_data|safe }};
+
+            new Chart(prodCtx, {
+                type: 'bar',
+                data: {
+                    labels: prodLabels,
+                    datasets: [{
+                        label: 'Total Paquetes en Stock',
+                        data: prodData,
+                        backgroundColor: 'rgba(79, 70, 229, 0.7)', // Indigo
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y', // Hace el gráfico de barras horizontal
+                    plugins: {
+                        legend: {
+                            display: false // Ocultamos la leyenda para gráficos de barra
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

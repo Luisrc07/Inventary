@@ -95,8 +95,8 @@ class MovimientoListview(LoginRequiredMixin, ListView):
     """
     Vista de lista de movimientos.
     - Admin: Ve todos los movimientos.
-    - Gerente/Operador: Ve SOLO los movimientos de SU departamento
-      (ya sea como origen O destino).
+    - Gerente/Operador: Ve SOLO los movimientos de SU departamento.
+    - ¡AHORA CON FILTROS!
     """
     model = Movimiento
     template_name = 'movimiento/list.html'
@@ -106,27 +106,59 @@ class MovimientoListview(LoginRequiredMixin, ListView):
     def get_queryset(self):
         perfil = self.request.user.perfil
         
+        # 1. Obtener el queryset base según los permisos
         if perfil.es_admin:
-            return Movimiento.objects.all().select_related(
+            base_qs = Movimiento.objects.all().select_related(
                 'producto', 'departamento_origen', 'departamento_destino'
             )
+        else:
+            depto_usuario = perfil.departamento
+            base_qs = Movimiento.objects.filter(
+                Q(departamento_origen=depto_usuario) | Q(departamento_destino=depto_usuario)
+            ).select_related('producto', 'departamento_origen', 'departamento_destino')
+
+        # 2. Obtener los parámetros de filtro del request GET
+        fecha_inicio = self.request.GET.get('fecha_inicio')
+        fecha_fin = self.request.GET.get('fecha_fin')
+        departamento_id = self.request.GET.get('departamento_id')
+
+        # 3. Aplicar los filtros al queryset base
+        if fecha_inicio:
+            # Filtra por fecha (incluyendo el día de inicio)
+            base_qs = base_qs.filter(fecha__date__gte=fecha_inicio)
+        
+        if fecha_fin:
+            # Filtra por fecha (incluyendo el día de fin)
+            base_qs = base_qs.filter(fecha__date__lte=fecha_fin)
+        
+        if departamento_id:
+            # Filtra por movimientos DONDE el departamento sea origen O destino
+            base_qs = base_qs.filter(
+                Q(departamento_origen_id=departamento_id) | Q(departamento_destino_id=departamento_id)
+            )
             
-        # Gerente/Operador: Filtra por movimientos donde su depto
-        # es origen O destino.
-        depto_usuario = perfil.departamento
-        return Movimiento.objects.filter(
-            Q(departamento_origen=depto_usuario) | Q(departamento_destino=depto_usuario)
-        ).select_related('producto', 'departamento_origen', 'departamento_destino')
+        # Retorna el queryset filtrado y ordenado
+        # (El 'ordering' en el Meta del modelo se encarga de ordenar por fecha)
+        return base_qs
 
     def get_context_data(self, **kwargs):
         """
-        Pasamos el perfil a la plantilla para mostrar/ocultar
-        el botón de "Crear Movimiento" (solo para Admin/Gerente).
+        Pasamos el perfil y los datos del filtro a la plantilla.
         """
         context = super().get_context_data(**kwargs)
         context['perfil'] = self.request.user.perfil
-        return context
+        
+        # --- ¡NUEVO! Pasar datos para el formulario de filtro ---
+        
+        # 1. Pasar la lista de todos los departamentos activos para el <select>
+        context['departamentos_list'] = Departamento.objects.filter(activo=True).order_by('nombre')
+        
+        # 2. Pasar los valores actuales del filtro para "recordarlos" en el form
+        context['fecha_inicio'] = self.request.GET.get('fecha_inicio', '')
+        context['fecha_fin'] = self.request.GET.get('fecha_fin', '')
+        context['departamento_id'] = self.request.GET.get('departamento_id', '')
 
+        return context
 @method_decorator(never_cache, name='dispatch')
 class MovimientoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """

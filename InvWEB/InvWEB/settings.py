@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'core',
     'inventarioAPP',
     'departamentoAPP',
@@ -84,8 +85,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'invweb_db',
-        'USER': 'postgres',
-        'PASSWORD': '12345',
+        'USER': 'invweb_user',
+        'PASSWORD': 'inventary12345',
         'HOST': 'localhost',
         'PORT': '5432',
     }

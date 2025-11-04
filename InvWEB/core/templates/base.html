@@ -40,7 +40,7 @@
                     Gestión
                 </p>
 
-                {% url 'core:Home' as hom %}
+                {% url 'core:dashboard' as hom %}
                 <a href="{{hom}}" class=" {% if request.path == hom %} flex items-center p-2 rounded-lg bg-indigo-600 text-white shadow-md {% else %} flex items-center p-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition duration-150 {% endif %}">
                     <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
                 </a>
