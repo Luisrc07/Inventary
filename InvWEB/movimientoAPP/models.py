@@ -5,6 +5,7 @@ from inventarioAPP.models import Producto
 from proveedorAPP.models import Proveedor
 from django.core.validators import MinValueValidator
 from django.contrib.auth.models import User
+from decimal import Decimal
 
 # =========================================================================
 # MODELO MOVIMIENTO (CORRECTO - USANDO DECIMAL)
@@ -76,7 +77,7 @@ class Movimiento(models.Model):
             return
 
         # La cantidad de stock a mover (en Paquetes)
-        cantidad_paquetes = self.cantidad 
+        cantidad_paquetes = Decimal(str(self.cantidad)) 
 
         try:
             # Envolvemos toda la lógica de stock Y el guardado del movimiento

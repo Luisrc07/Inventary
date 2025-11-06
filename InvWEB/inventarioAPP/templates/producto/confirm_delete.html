@@ -3,7 +3,6 @@
 {% block tittle %}Eliminar Producto{% endblock %}
 
 {% block content %}
-<!-- Contenedor Centrado y con Sombra -->
 <div class="bg-white p-8 rounded-xl shadow-lg max-w-lg mx-auto">
 
     <h1 class="text-3xl font-bold text-gray-800 mb-4 border-b pb-2">
@@ -15,25 +14,33 @@
         <strong class="text-red-600">"{{ object.nombre }}"</strong>?
     </p>
 
-    <!-- Advertencia de Dependencias -->
+    {% if dependency_count > 0 %} 
     <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 mb-6 rounded-md" role="alert">
-        <p class="font-bold text-sm">¡Atención!</p>
-
-        <p class="text-sm">Si eliminas este Producto, se eliminara permanentemente del sistema.</p>
-
+        <p class="font-bold text-sm">¡Atención! ({{ dependency_count }} registros asociados)</p>
+        <p class="text-sm">
+            <strong class="font-semibold">No puedes eliminar este producto.</strong> 
+            Ya tienes registro de movimientos con este producto <strong class="text-yellow-900">{{ dependency_count }}</strong> movimiento(s) o registro(s) de stock asociados.
+        </p>
     </div>
+    {% endif %}
 
     <form method="post" class="flex justify-start space-x-4">
         {% csrf_token %}
         
-        <!-- Botón de Confirmación (Rojo) -->
+        {% if dependency_count == 0 %}
         <button type="submit" 
                 class="bg-red-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-red-700 transition duration-150 shadow-md flex items-center">
             <i class="fas fa-trash-alt mr-2"></i>
             Sí, Eliminar Permanentemente
         </button>
+        {% else %}
+        <button type="button" disabled
+                class="bg-gray-400 text-white font-semibold px-6 py-2 rounded-lg cursor-not-allowed shadow-md flex items-center">
+            <i class="fas fa-ban mr-2"></i>
+            Eliminación Bloqueada
+        </button>
+        {% endif %}
         
-        <!-- Botón de Cancelar -->
         {% url 'inventarioAPP:producto_list' as cancel_url %}
         <a href="{{ cancel_url }}" 
            class="text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">

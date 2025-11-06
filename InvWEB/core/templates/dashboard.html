@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% load humanize %} {% load static %}
-
-{% block tittle %}Dashboard{% endblock %}
+{% load matematicas %} {% block tittle %}Dashboard{% endblock %}
 
 {% block head_includes %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -115,8 +114,10 @@
                             {% if is_admin %}
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
                             {% endif %}
-                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Actual</th>
-                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Mínimo</th>
+                            
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Actual (Unid.)</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Mínimo (Unid.)</th>
+                        
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -126,8 +127,16 @@
                             {% if is_admin %}
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{{ item.departamento.nombre }}</td>
                             {% endif %}
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold text-red-600">{{ item.cantidad|floatformat:2 }} paq.</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-500">{{ item.producto.stock_minimo|floatformat:2 }} paq.</td>
+                            
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold text-red-600">
+                                {{ item.total_unidades|floatformat:2|intcomma }} unid.
+                            </td>
+                            
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-500">
+                                {% with min_unidades=item.producto.stock_minimo|mul:item.producto.unidad_medida %}
+                                    {{ min_unidades|floatformat:2|intcomma }} unid.
+                                {% endwith %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
