@@ -16,7 +16,7 @@ class CategoriaModelChoiceField(ModelChoiceField):
 class MovimientoForm(forms.ModelForm):
     # Campo auxiliar de Categoría
     categoria_select = CategoriaModelChoiceField(
-        queryset=Categoria.objects.all(),
+        queryset=Categoria.objects.none(),
         label="Filtrar por Categoría",
         required=False,
         empty_label="--- Seleccione una Categoría ---",
@@ -54,77 +54,61 @@ class MovimientoForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        # --- ¡INICIO DE LÓGICA DE PERMISOS! ---
-        # 1. Capturamos el 'user' que pasamos desde la vista
         self.user = kwargs.pop('user', None)
-        # --- FIN DE LÓGICA DE PERMISOS! ---
         
         super().__init__(*args, **kwargs)
-
-        # 2. Inicializar el campo 'producto' vacío (como ya lo tenías)
-        self.fields['producto'].queryset = Producto.objects.none()
         
+        self.fields['producto'].queryset = Producto.objects.none()
+        self.fields['categoria_select'].queryset = Categoria.objects.none()
+
         categoria_id_a_filtrar = None
         
         if self.instance and self.instance.pk and self.instance.producto_id:
             producto_instance = self.instance.producto 
             categoria_id_a_filtrar = producto_instance.categoria_id
             
-        elif self.data and self.data.get('categoria_select'):
-            categoria_id_a_filtrar = self.data.get('categoria_select')
-        
-        if categoria_id_a_filtrar:
+            self.fields['categoria_select'].queryset = Categoria.objects.all().order_by('nombre')
             self.fields['producto'].queryset = Producto.objects.filter(
                 categoria_id=categoria_id_a_filtrar
             ).order_by('nombre')
-            self.initial['categoria_select'] = categoria_id_a_filtrar
             
-        # 3. Filtrar los querysets de Departamento (Base)
+            self.initial['categoria_select'] = categoria_id_a_filtrar
+
+        elif self.data:
+            self.fields['categoria_select'].queryset = Categoria.objects.all().order_by('nombre')
+            
+            categoria_id_a_filtrar = self.data.get('categoria_select')
+            if categoria_id_a_filtrar:
+                self.fields['producto'].queryset = Producto.objects.filter(
+                    categoria_id=categoria_id_a_filtrar
+                ).order_by('nombre')
+        
         queryset_departamentos = Departamento.objects.filter(activo=True)
         self.fields['departamento_origen'].queryset = queryset_departamentos
         self.fields['departamento_destino'].queryset = queryset_departamentos
 
-        # --- ¡LÓGICA DE PERMISOS EN CAMPOS! ---
-        # 4. Si el usuario NO es admin, restringimos los querysets
         if self.user and hasattr(self.user, 'perfil') and not self.user.perfil.es_admin:
             depto_usuario = self.user.perfil.departamento
             if depto_usuario:
-                # Un Gerente SÓLO puede sacar cosas de SU departamento
                 self.fields['departamento_origen'].queryset = Departamento.objects.filter(pk=depto_usuario.pk)
-                
-                # Un Gerente SÓLO puede ingresar cosas a SU departamento
-                
-                
-                # Excepción: Para transferencias, sí pueden ELEGIR destino
-                # (Lo manejaremos en el 'clean' para más seguridad)
-                # Si quieres que puedan transferir a otros, descomenta la siguiente línea:
-                # self.fields['departamento_destino'].queryset = queryset_departamentos
 
     def clean(self):
         cleaned_data = super().clean()
         tipo = cleaned_data.get('tipo')
         
-        # --- VALIDACIÓN DE ROLES ---
         if self.user and hasattr(self.user, 'perfil') and not self.user.perfil.es_admin:
             depto_usuario = self.user.perfil.departamento
             
-            # Si un Gerente intenta hacer una TRANSFERENCIA,
-            # DEBE poder seleccionar un destino diferente.
-            # Sobreescribimos la restricción del __init__ SÓLO para este caso.
             if tipo == 'TRANSFERENCIA':
                 self.fields['departamento_destino'].queryset = Departamento.objects.filter(activo=True)
-                
-                # Validamos que el destino no sea el mismo origen
                 destino_transferencia = cleaned_data.get('departamento_destino')
                 if destino_transferencia == depto_usuario:
                     self.add_error('departamento_destino', 'No puede transferir stock a su mismo departamento.')
             
-            # Validamos que un Gerente no haga ENTRADAS a otro depto
             if tipo == 'ENTRADA':
                 if cleaned_data.get('departamento_destino') != depto_usuario:
                     self.add_error('departamento_destino', 'Solo puede registrar ENTRADAS para su propio departamento.')
         
-        # --- VALIDACIÓN DE CAMPOS (Tu lógica original, está perfecta) ---
         costo_unitario_bs = cleaned_data.get('costo_unitario_bs')
         tasa_cambio = cleaned_data.get('tasa_cambio')
         
@@ -156,7 +140,6 @@ class MovimientoForm(forms.ModelForm):
             if not cleaned_data.get('departamento_destino'):
                 self.add_error('departamento_destino', 'Debe seleccionar un departamento de destino.')
             
-            # Validar que origen y destino no sean el mismo
             if cleaned_data.get('departamento_origen') == cleaned_data.get('departamento_destino'):
                 self.add_error('departamento_destino', 'El origen y el destino no pueden ser el mismo departamento.')
                 

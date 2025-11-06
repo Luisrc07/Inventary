@@ -3,44 +3,88 @@
 {% block tittle %}{% if object %}Editar Producto{% else %}Crear Producto{% endif %}{% endblock %}
 
 {% block content %}
-<h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">
-    {% if object %}Editar{% else %}Crear{% endif %} Producto
+<h1 class="text-3xl font-bold text-gray-800 mb-4 border-b pb-2">
+    {% if object %}Editar Producto{% else %}Crear Nuevo Producto{% endif %}
 </h1>
 
-<div class="bg-white p-8 rounded-xl shadow-lg max-w-xl mx-auto text-black">
+<div class="bg-white p-8 rounded-xl shadow-lg max-w-2xl mx-auto text-black">
     
-    <form method="post" class="space-y-6">
+    <form method="post">
         {% csrf_token %}
-        
-        {% for field in form %}
-            <div class="flex flex-col">
-                <label for="{{ field.id_for_label }}" class="mb-1 font-medium text-black">
-                    {{ field.label }}
-                </label>
-                
-                {{ field }} 
-                
-                {% if field.errors %}
-                    <p class="mt-1 text-sm text-red-600">{{ field.errors.as_text }}</p>
-                {% endif %}
-            </div>
-        {% endfor %}
 
-        <div class="flex justify-start pt-4 border-t mt-6">
+        {% if form.non_field_errors %}
+            <div class="p-4 bg-red-50 border-l-4 border-red-400 text-red-700 mb-3 rounded-md" role="alert">
+                {{ form.non_field_errors.as_text }}
+            </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+            <div class="flex flex-col"> 
+                <label for="{{ form.nombre.id_for_label }}" class="mb-1 font-medium text-black">
+                    {{ form.nombre.label }}
+                </label>
+                {{ form.nombre }} 
+                {% if form.nombre.errors %}<p class="mt-1 text-sm text-red-600">{{ form.nombre.errors.as_text }}</p>{% endif %}
+            </div>
+            
+            <div class="flex flex-col"> 
+                <label for="{{ form.sku.id_for_label }}" class="mb-1 font-medium text-black">
+                    {{ form.sku.label }}
+                </label>
+                {{ form.sku }} 
+                {% if form.sku.errors %}<p class="mt-1 text-sm text-red-600">{{ form.sku.errors.as_text }}</p>{% endif %}
+            </div>
+        </div>
+
+        <div class="flex flex-col mb-3"> 
+            <label for="{{ form.categoria.id_for_label }}" class="mb-1 font-medium text-black">
+                {{ form.categoria.label }}
+            </label>
+            {{ form.categoria }} 
+            {% if form.categoria.errors %}<p class="mt-1 text-sm text-red-600">{{ form.categoria.errors.as_text }}</p>{% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+            <div class="flex flex-col"> 
+                <label for="{{ form.unidad_medida.id_for_label }}" class="mb-1 font-medium text-black">
+                    {{ form.unidad_medida.label }}
+                </label>
+                {{ form.unidad_medida }} 
+                {% if form.unidad_medida.errors %}<p class="mt-1 text-sm text-red-600">{{ form.unidad_medida.errors.as_text }}</p>{% endif %}
+            </div>
+
+            <div class="flex flex-col"> 
+                <label for="{{ form.stock_minimo.id_for_label }}" class="mb-1 font-medium text-black">
+                    {{ form.stock_minimo.label }}
+                </label>
+                {{ form.stock_minimo }} 
+                {% if form.stock_minimo.help_text %}
+                <p class="mt-1 text-sm text-gray-500">{{ form.stock_minimo.help_text }}</p>
+                {% endif %}
+                {% if form.stock_minimo.errors %}<p class="mt-1 text-sm text-red-600">{{ form.stock_minimo.errors.as_text }}</p>{% endif %}
+            </div>
+        </div>
+
+        <div class="flex items-center mb-3 mt-4"> 
+            {{ form.activo }}
+            <label for="{{ form.activo.id_for_label }}" class="ml-2 font-medium text-black">
+                {{ form.activo.label }} (Marque si el producto está disponible para movimientos)
+            </label>
+            {% if form.activo.errors %}<p class="mt-1 text-sm text-red-600">{{ form.activo.errors.as_text }}</p>{% endif %}
+        </div>
+
+        {% url 'inventarioAPP:producto_list' as cancel_url %}
+        <div class="flex justify-start items-center pt-6 border-t mt-6 space-x-4">
             <button type="submit" 
-                    class="bg-indigo-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md">
-                <i class="fas fa-save mr-2"></i>
-                Guardar {{ object|yesno:"Cambios,Producto" }}
+                    class="flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md cursor-pointer">
+                <i class="fas fa-save mr-2"></i> Guardar Producto
             </button>
             
-            {% url 'inventarioAPP:producto_list' as cancel_url %}
             <a href="{{ cancel_url }}" 
-               class="ml-4 text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center">
-                <i class="fas fa-times mr-2"></i>
-                Cancelar
+               class="text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center justify-center shadow">
+                <i class="fas fa-times mr-2"></i> Cancelar
             </a>
         </div>
-        
     </form>
 </div>
-{% endblock %}
+{% endblock %}  
