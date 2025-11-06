@@ -1,5 +1,3 @@
-# En movimientoAPP/views.py
-
 import json
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView
@@ -7,6 +5,10 @@ from django.contrib import messages
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse 
 from django.db.models import Q 
+# --- ¡NUEVAS IMPORTACIONES PARA CONSULTAS SEGURAS! ---
+from django.db.models import F, Value
+from django.db.models.functions import Coalesce
+# --- FIN NUEVAS IMPORTACIONES ---
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.views.decorators.cache import never_cache
@@ -30,7 +32,6 @@ from weasyprint import HTML
 # VISTAS DE STOCK (CON PERMISOS)
 # =========================================================================
 
-
 @method_decorator(never_cache, name='dispatch')
 class StockGroupedListview(LoginRequiredMixin, ListView):
     # ... (Sin cambios) ...
@@ -40,34 +41,28 @@ class StockGroupedListview(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         perfil = self.request.user.perfil
-        
         base_qs = Departamento.objects.filter(activo=True).prefetch_related(
             'perfiles__user', 
             'stock_items__producto'
         )
-        
         if perfil.es_admin:
-            return base_qs 
-        
+            return base_qs
         return base_qs.filter(pk=perfil.departamento.pk)
-    
+
 @method_decorator(never_cache, name='dispatch')
 class StockListview(LoginRequiredMixin, ListView):
-    # ... (Sin cambios aquí, la corrección anterior era correcta) ...
+    # ... (Sin cambios) ...
     model = StockActual
     template_name = 'stock/list.html'
     context_object_name = 'stockactual'
     
     def get_queryset(self):
         perfil = self.request.user.perfil
-        
         base_qs = StockActual.objects.filter(cantidad__gt=0).select_related(
             'producto', 'departamento'
         )
-        
         if perfil.es_admin:
-            return base_qs 
-            
+            return base_qs
         return base_qs.filter(departamento=perfil.departamento)
 
 # =========================================================================
@@ -176,7 +171,7 @@ class MovimientoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         except ValueError as e:
             form.add_error(None, str(e))
             return self.form_invalid(form)
-        
+
 @method_decorator(never_cache, name='dispatch')
 class MovimientoUpdateView(LoginRequiredMixin, UpdateView):
     # ... (Sin cambios) ...
@@ -238,7 +233,7 @@ def load_categorias(request):
     departamento_id = request.GET.get('departamento_id')
     
     if departamento_id:
-        # --- ¡NUEVA LÓGICA MÁS ROBUSTA! ---
+        # --- ¡LÓGICA ROBUSTA CORREGIDA! ---
         # 1. Obtener todos los IDs de productos que tienen stock en ese depto
         product_ids_in_stock = StockActual.objects.filter(
             departamento_id=departamento_id,
@@ -246,16 +241,16 @@ def load_categorias(request):
         ).values_list('producto_id', flat=True)
 
         # 2. De esos IDs, obtener los IDs de sus categorías
-        # (Asumiendo que 'categoria_id' puede ser NULL)
+        # (Se asume que 'categoria' es el nombre del campo en Producto)
         category_ids = Producto.objects.filter(
             pk__in=product_ids_in_stock
         ).exclude(
-            categoria_id=None
+            categoria__isnull=True  # Excluir productos sin categoría
         ).values_list('categoria_id', flat=True).distinct()
 
         # 3. Obtener los objetos Categoria
         categorias = Categoria.objects.filter(pk__in=category_ids).order_by('nombre')
-        # --- FIN NUEVA LÓGICA ---
+        # --- FIN LÓGICA CORREGIDA ---
     else:
         # Cargar todas las categorías (para ENTRADA)
         categorias = Categoria.objects.all().order_by('nombre')
@@ -269,23 +264,28 @@ def get_stock_departamento(request):
     Obtiene el stock completo de un departamento (HTML) para mostrarlo en el panel
     de información de 'Transferencia'.
     """
-    # ... (Sin cambios) ...
     departamento_id = request.GET.get('departamento_id')
     if not departamento_id:
         return JsonResponse({'error': 'No se proporcionó departamento'}, status=400)
     
     depto = get_object_or_404(Departamento, pk=departamento_id)
     
+    # --- ¡CONSULTA CORREGIDA! ---
+    # Usamos Coalesce para ordenar de forma segura por nombre de categoría,
+    # tratando los NULL como 'Sin Categoría' durante la ordenación.
     stock_items = StockActual.objects.filter(
         departamento=depto,
         cantidad__gt=0
-    ).select_related('producto', 'producto__categoria').order_by(
-        'producto__categoria__nombre', 'producto__nombre'
-    )
+    ).select_related('producto', 'producto__categoria').annotate(
+        # Crea un campo temporal 'categoria_orden'
+        categoria_orden=Coalesce('producto__categoria__nombre', Value('Sin Categoría'))
+    ).order_by('categoria_orden', 'producto__nombre')
+    # --- FIN CONSULTA CORREGIDA ---
     
     stock_agrupado = {}
     for item in stock_items:
         categoria_nombre = "Sin Categoría"
+        # (Se asume que 'categoria' es el nombre del campo en Producto)
         if item.producto.categoria:
              categoria_nombre = item.producto.categoria.nombre
         
@@ -310,19 +310,20 @@ def get_stock_departamento(request):
 
 def load_productos(request):
     """
-    Carga productos para el select dinámico. (MODIFICADA)
+    Carga productos para el select dinámico.
     """
-    # ... (Sin cambios) ...
     categoria_id = request.GET.get('categoria_id')
     departamento_id = request.GET.get('departamento_id') 
     
     if not categoria_id:
         return JsonResponse([], safe=False)
         
+    # (Se asume que 'categoria' es el nombre del campo en Producto)
     base_productos = Producto.objects.filter(categoria_id=categoria_id, activo=True).order_by('nombre')
     productos_list = []
 
     if departamento_id:
+        # (Se asume que 'producto' y 'departamento' son los nombres)
         stock_data = StockActual.objects.filter(
             departamento_id=departamento_id,
             producto__categoria_id=categoria_id,
