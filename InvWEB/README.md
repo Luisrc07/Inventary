@@ -2,7 +2,7 @@
 
 Un sistema de gestión de inventario basado en la web, construido con Django y Tailwind CSS. Diseñado para gestionar el stock multi-departamento, controlar los movimientos y administrar usuarios basados en roles.
 
-Este proyecto fue desarrollado como parte de [Menciona si fue para tu pasantía, un proyecto personal, etc.].
+Este proyecto fue desarrollado como parte para mis pasantias informaticas, este proyecto fue ejecutado para el Centro Integral Cooperativo de Salud. Para la institucion agilizar los procesos y tener un seguimiento de productos de entrada, transferencia (departamento -> departamento) y salida. 
 
 ## 🚀 Características Principales
 
