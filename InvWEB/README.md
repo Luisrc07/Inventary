@@ -23,7 +23,7 @@ Este proyecto fue desarrollado como parte de [Menciona si fue para tu pasantía,
 * **Base de Datos:** Postgres
 * **Reportes:** WeasyPrint
 
-##    🛠️ Instalación y Ejecución Local (Versión Corregida)
+## 🛠️ Instalación y Ejecución Local (Versión Corregida)
 
 Sigue estos pasos para clonar y ejecutar el proyecto en una nueva computadora.
 
@@ -34,6 +34,22 @@ Antes de empezar, asegúrate de tener instaladas las siguientes herramientas en 
 * **Node.js y npm:** (Versión LTS recomendada). django-tailwind necesita npm para instalar las dependencias de frontend (como DaisyUI). Puedes descargarlo aquí.
 * **Git:** Para clonar el repositorio.
 
-## Pasos de Instalación
+---
 
-    
+### Pasos de Instalación
+Sigue estos pasos para levantar el proyecto en un entorno de desarrollo local.
+
+### 1. Clonar el repositorio
+    git clone https://github.com/Luisrc07/Inventary.git
+    cd InvWEB
+
+### 2. Crear y activar el entorno virtual
+Un entorno virtual (venv) aísla las dependencias del proyecto.
+
+#### gitbash
+        python -m venv venv
+        .\venv\Scripts\activate
+
+#### Windows     
+        python -m venv venv
+        .\venv\Scripts\activate
