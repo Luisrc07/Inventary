@@ -148,3 +148,11 @@ En una Terminal 2 (ejecuta el proyecto)
 
 
 ¡Abre http://127.0.0.1:8000/ en tu navegador!
+
+## 📄 Licencia
+
+Este proyecto está distribuido bajo la **Licencia Pública General GNU v3.0 (GPLv3)**.
+
+Esto significa que eres libre de usar, modificar y distribuir este software. Sin embargo, cualquier trabajo derivado o software que distribuyas que utilice este código **debe también ser licenciado bajo la GPLv3**, garantizando que el software permanezca libre y de código abierto para siempre.
+
+Para ver el texto completo de la licencia, consulta el archivo [LICENSE](LICENSE) en este repositorio.
