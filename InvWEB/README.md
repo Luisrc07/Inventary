@@ -30,8 +30,8 @@ Sigue estos pasos para clonar y ejecutar el proyecto en una nueva computadora.
 Prerrequisitos del Sistema
 Antes de empezar, asegúrate de tener instaladas las siguientes herramientas en tu máquina:
 
-* **Python:** (Versión 3.10 o superior). Puedes descargarlo aquí.
-* **Node.js y npm:** (Versión LTS recomendada). django-tailwind necesita npm para instalar las dependencias de frontend (como DaisyUI). Puedes descargarlo aquí.
+* **Python:** (Versión 3.10 o superior).
+* **Node.js y npm:** (Versión LTS recomendada).
 * **Git:** Para clonar el repositorio.
 
 ---
@@ -146,5 +146,5 @@ En una Terminal 2 (ejecuta el proyecto)
 
             python manage.py runserver
 
-            
+
 ¡Abre http://127.0.0.1:8000/ en tu navegador!
