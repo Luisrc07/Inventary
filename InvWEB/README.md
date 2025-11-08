@@ -108,3 +108,8 @@ Para esta configuracion tomaremos en cuenta que la base de datos ha sido creada 
             }
         }
 
+#### 6. Aplicar migraciones
+Este comando usa la configuración de settings.py para construir las tablas de tu base de datos.
+
+        python manage.py migrate
+>> (Si ves un montón de "Applying... OK", ¡la conexión fue un éxito!)
