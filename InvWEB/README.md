@@ -39,17 +39,72 @@ Antes de empezar, asegúrate de tener instaladas las siguientes herramientas en 
 ### Pasos de Instalación
 Sigue estos pasos para levantar el proyecto en un entorno de desarrollo local.
 
-### 1. Clonar el repositorio
+#### 1. Clonar el repositorio
     git clone https://github.com/Luisrc07/Inventary.git
     cd InvWEB
 
-### 2. Crear y activar el entorno virtual
+#### 2. Crear y activar el entorno virtual
 Un entorno virtual (venv) aísla las dependencias del proyecto.
 
-#### gitbash
+##### gitbash
+        python -m venv venv
+        source venv/Scripts/activate
+
+##### Windows     
         python -m venv venv
         .\venv\Scripts\activate
 
-#### Windows     
-        python -m venv venv
-        .\venv\Scripts\activate
+> *si esta activo veras (venv) al principio de la linea de tu terminal.*
+
+#### 3. Instalar las dependencias de Python
+El archivo requirements.txt contiene todas las librerías necesarias.
+
+        pip install -r requirements.txt
+
+#### 4.Configuración de PostgreSQL
+Este proyecto usa PostgreSQL. Si no lo tienes instalado, sigue estos pasos:
+
+###### 4.a. Instalar el Servidor PostgreSQL
+Descarga: Ve al sitio web de EnterpriseDB (EDB) y descarga el instalador de PostgreSQL para Windows.
+
+**Instala:**
+Ejecuta el instalador. Deja todos los componentes por defecto (PostgreSQL Server y pgAdmin 4 son los más importantes).
+¡Contraseña Maestra! Durante la instalación, te pedirá una contraseña de superusuario (para el usuario postgres). Esta es la contraseña "maestra" de tu servidor. No la olvides.
+Deja el puerto por defecto (5432) y finaliza la instalación.
+
+###### 4.b. Crear Usuario y Base de Datos
+No usaremos la cuenta "maestra" en Django. Crearemos un usuario y una base de datos dedicados.
+
+1. Abre pgAdmin 4: Búscalo en tu menú de Inicio. Te pedirá la contraseña "maestra" que acabas de crear para conectarte al servidor.
+
+2. Crea un Usuario (Rol):
+
+* En el panel izquierdo, haz clic derecho sobre Servers -> PostgreSQL -> Login/Group Roles -> Create -> Login/Group Role....
+* Pestaña "General": Dale un nombre al usuario (Ej: inventario_user).
+* Pestaña "Definition": Escribe una contraseña para este nuevo usuario (Ej: clave_django_123).
+* Pestaña "Privileges": Asegúrate de que Can login? esté en Yes.
+* Clic en Save.
+
+3. Crea la Base de Datos:
+* Haz clic derecho sobre Databases -> Create -> Database....
+* Pestaña "General": Dale un nombre a la base de datos (Ej: inventario_db).
+* Pestaña "Owner" (Propietario): Selecciona el usuario que acabas de crear (inventario_user).
+* Clic en Save.
+
+#### 5. Configurar settings.py de Django
+Para esta configuracion tomaremos en cuenta que la base de datos ha sido creada con pgAdmin 4.
+
+* Abre el archivo settings.py de tu proyecto.
+* Busca la sección DATABASES y reemplaza la configuración de sqlite3 por esta:
+
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': 'inventario_db',         # El nombre de tu DB (Paso 4.b)
+                'USER': 'inventario_user',         # El usuario que creaste (Paso 4.b)
+                'PASSWORD': 'clave_django_123',  # La contraseña de ESE usuario (Paso 4.b)
+                'HOST': 'localhost',             # O '127.0.0.1'
+                'PORT': '5432',                  # El puerto por defecto
+            }
+        }
+
