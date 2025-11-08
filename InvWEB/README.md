@@ -3,7 +3,7 @@
 Un sistema de gestión de inventario basado en la web, construido con Django y Tailwind CSS. Diseñado para gestionar el stock multi-departamento, controlar los movimientos y administrar usuarios basados en roles.
 
 Este proyecto fue desarrollado como parte de [Menciona si fue para tu pasantía, un proyecto personal, etc.].
----
+
 ## 🚀 Características Principales
 
 **Gestión de Roles:** Sistema de autenticación con 3 niveles de usuario (Administrador, Gerente, Operador).
@@ -21,7 +21,7 @@ Este proyecto fue desarrollado como parte de [Menciona si fue para tu pasantía,
 **Formularios Dinámicos:** La interfaz de creación de movimientos cambia dinámicamente según el tipo de movimiento y el rol del usuario (usando JavaScript).
 
 **Generación de Reportes PDF:** Creación de reportes de stock por departamento usando WeasyPrint.
----
+
 ## 💻 Stack Tecnológico
 
 **Backend:** Python 3.12, Django 5.2
@@ -33,7 +33,7 @@ Este proyecto fue desarrollado como parte de [Menciona si fue para tu pasantía,
 **Base de Datos:** Postgres
 
 **Reportes:** WeasyPrint
----
+
 ##    🛠️ Instalación y Ejecución Local (Versión Corregida)
 
 Sigue estos pasos para clonar y ejecutar el proyecto en una nueva computadora.
@@ -46,7 +46,7 @@ Antes de empezar, asegúrate de tener instaladas las siguientes herramientas en 
 **Node.js y npm:** (Versión LTS recomendada). django-tailwind necesita npm para instalar las dependencias de frontend (como DaisyUI). Puedes descargarlo aquí.
 
 **Git:** Para clonar el repositorio.
----
+
 ## Pasos de Instalación
 
     
