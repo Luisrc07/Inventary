@@ -5,16 +5,15 @@ from django.contrib import messages
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse 
 from django.db.models import Q 
-# --- ¡NUEVAS IMPORTACIONES PARA CONSULTAS SEGURAS! ---
 from django.db.models import F, Value
 from django.db.models.functions import Coalesce
-# --- FIN NUEVAS IMPORTACIONES ---
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
 
 # --- Importaciones de Modelos ---
+# (Usando los nombres de tus models.py)
 from .models import Movimiento, StockActual
 from inventarioAPP.models import Producto, Categoria 
 from departamentoAPP.models import Departamento
@@ -43,7 +42,7 @@ class StockGroupedListview(LoginRequiredMixin, ListView):
         perfil = self.request.user.perfil
         base_qs = Departamento.objects.filter(activo=True).prefetch_related(
             'perfiles__user', 
-            'stock_items__producto'
+            'stock_items__producto' # 'stock_items' viene de tu models.py
         )
         if perfil.es_admin:
             return base_qs
@@ -132,8 +131,10 @@ class MovimientoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # ¡IMPORTANTE! Modificamos productos_data
+        # Ahora usamos 'unidad_medida' de tu 'models.py'
         productos_data = {
-            str(p.id): str(p.unidad_medida)
+            str(p.id): str(p.unidad_medida) 
             for p in Producto.objects.filter(activo=True)
         }
         context['productos_data_json'] = json.dumps(productos_data)
@@ -194,7 +195,7 @@ def generar_reporte_stock_pdf(request, pk):
     depto = get_object_or_404(
         Departamento.objects.prefetch_related(
             'perfiles__user', 
-            'stock_items__producto'
+            'stock_items__producto' # 'stock_items' de tu models.py
         ), 
         pk=pk
     )
@@ -227,32 +228,24 @@ def generar_reporte_stock_pdf(request, pk):
 def load_categorias(request):
     """
     Carga categorías para el select dinámico.
-    - Si se pasa 'departamento_id', filtra categorías que tengan al menos
-      un producto con stock > 0 en ese departamento.
+    (Esta vista ya está funcionando bien según tu reporte)
     """
     departamento_id = request.GET.get('departamento_id')
     
     if departamento_id:
-        # --- ¡LÓGICA ROBUSTA CORREGIDA! ---
-        # 1. Obtener todos los IDs de productos que tienen stock en ese depto
         product_ids_in_stock = StockActual.objects.filter(
             departamento_id=departamento_id,
             cantidad__gt=0
         ).values_list('producto_id', flat=True)
 
-        # 2. De esos IDs, obtener los IDs de sus categorías
-        # (Se asume que 'categoria' es el nombre del campo en Producto)
         category_ids = Producto.objects.filter(
             pk__in=product_ids_in_stock
         ).exclude(
-            categoria__isnull=True  # Excluir productos sin categoría
+            categoria__isnull=True  # 'categoria' es el campo en tu models.py
         ).values_list('categoria_id', flat=True).distinct()
 
-        # 3. Obtener los objetos Categoria
         categorias = Categoria.objects.filter(pk__in=category_ids).order_by('nombre')
-        # --- FIN LÓGICA CORREGIDA ---
     else:
-        # Cargar todas las categorías (para ENTRADA)
         categorias = Categoria.objects.all().order_by('nombre')
     
     categorias_list = [{'id': str(c.pk), 'nombre': c.nombre} for c in categorias]
@@ -263,6 +256,7 @@ def get_stock_departamento(request):
     """
     Obtiene el stock completo de un departamento (HTML) para mostrarlo en el panel
     de información de 'Transferencia'.
+    (Esta vista fallaba por TemplateDoesNotExist, no por la lógica)
     """
     departamento_id = request.GET.get('departamento_id')
     if not departamento_id:
@@ -270,22 +264,16 @@ def get_stock_departamento(request):
     
     depto = get_object_or_404(Departamento, pk=departamento_id)
     
-    # --- ¡CONSULTA CORREGIDA! ---
-    # Usamos Coalesce para ordenar de forma segura por nombre de categoría,
-    # tratando los NULL como 'Sin Categoría' durante la ordenación.
     stock_items = StockActual.objects.filter(
         departamento=depto,
         cantidad__gt=0
     ).select_related('producto', 'producto__categoria').annotate(
-        # Crea un campo temporal 'categoria_orden'
         categoria_orden=Coalesce('producto__categoria__nombre', Value('Sin Categoría'))
     ).order_by('categoria_orden', 'producto__nombre')
-    # --- FIN CONSULTA CORREGIDA ---
     
     stock_agrupado = {}
     for item in stock_items:
         categoria_nombre = "Sin Categoría"
-        # (Se asume que 'categoria' es el nombre del campo en Producto)
         if item.producto.categoria:
              categoria_nombre = item.producto.categoria.nombre
         
@@ -295,10 +283,11 @@ def get_stock_departamento(request):
         stock_agrupado[categoria_nombre].append({
             'nombre': item.producto.nombre,
             'cantidad': item.cantidad,
-            'unidad_medida': item.producto.unidad_medida,
-            'total_unidades': item.total_unidades 
+            'unidad_medida': item.producto.unidad_medida, # 'unidad_medida' de tu models.py
+            'total_unidades': item.total_unidades # 'total_unidades' de tu models.py
         })
-        
+    
+    # Esta línea es la que fallaba porque no encontraba el archivo
     html_content = render_to_string('movimiento/snippet_stock_departamento.html', {
         'depto': depto,
         'stock_agrupado': stock_agrupado,
@@ -311,6 +300,7 @@ def get_stock_departamento(request):
 def load_productos(request):
     """
     Carga productos para el select dinámico.
+    ¡MODIFICADO! Ahora también devuelve 'unidad_medida'.
     """
     categoria_id = request.GET.get('categoria_id')
     departamento_id = request.GET.get('departamento_id') 
@@ -318,12 +308,10 @@ def load_productos(request):
     if not categoria_id:
         return JsonResponse([], safe=False)
         
-    # (Se asume que 'categoria' es el nombre del campo en Producto)
     base_productos = Producto.objects.filter(categoria_id=categoria_id, activo=True).order_by('nombre')
     productos_list = []
 
     if departamento_id:
-        # (Se asume que 'producto' y 'departamento' son los nombres)
         stock_data = StockActual.objects.filter(
             departamento_id=departamento_id,
             producto__categoria_id=categoria_id,
@@ -338,15 +326,18 @@ def load_productos(request):
             productos_list.append({
                 'id': str(producto.pk),
                 'nombre': f"{producto.nombre} ({producto.unidad_medida} u/paq)",
-                'stock': str(stock_dict.get(str(producto.pk), 0))
+                'stock': str(stock_dict.get(str(producto.pk), 0)),
+                'unidad_medida': str(producto.unidad_medida) # <-- ¡NUEVO!
             })
     
     else:
+        # Modo 'ENTRADA'
         for producto in base_productos:
             productos_list.append({
                 'id': str(producto.pk), 
                 'nombre': f"{producto.nombre} ({producto.unidad_medida} u/paq)",
-                'stock': None
+                'stock': None,
+                'unidad_medida': str(producto.unidad_medida) # <-- ¡NUEVO!
             })
             
     return JsonResponse(productos_list, safe=False)
