@@ -112,4 +112,39 @@ Para esta configuracion tomaremos en cuenta que la base de datos ha sido creada 
 Este comando usa la configuración de settings.py para construir las tablas de tu base de datos.
 
         python manage.py migrate
->> (Si ves un montón de "Applying... OK", ¡la conexión fue un éxito!)
+
+> *(Si ves un montón de "Applying... OK", ¡la conexión fue un éxito!)*
+
+#### 7. Instalar y Construir TailwindCSS
+Este proyecto usa django-tailwind para los estilos.
+
+            # Instala las dependencias de Node.js que necesita Tailwind
+            python manage.py tailwind install
+
+            # Compila los archivos CSS por primera vez
+            python manage.py tailwind build
+
+#### 8. Creacion de SuperUsuario
+El mismo proyecto lleva un seeder que limpia la bd y crea un superusuario administrador.
+Sin embargo, como recomendacion puedes cambiar la contraseña y nombre de usuario de dicho superusuario
+ya que contiene datos los cuales cualquiera podria acceder facilmente.
+
+        python manage.py seed
+>esto creara un superusuario admin la cual el user: admin contraseña: admin123
+
+#### 9. Ejecuta los servidores:
+
+En una Terminal 1 (compila el CSS):
+
+            Bash
+
+            python manage.py tailwind start
+            
+
+En una Terminal 2 (ejecuta el proyecto)
+            Bash
+
+            python manage.py runserver
+
+            
+¡Abre http://127.0.0.1:8000/ en tu navegador!
