@@ -41,7 +41,7 @@ Sigue estos pasos para levantar el proyecto en un entorno de desarrollo local.
 
 #### 1. Clonar el repositorio
     git clone https://github.com/Luisrc07/Inventary.git
-    cd InvWEB
+    cd Inventary/InvWEB
 
 #### 2. Crear y activar el entorno virtual
 Un entorno virtual (venv) aísla las dependencias del proyecto.
