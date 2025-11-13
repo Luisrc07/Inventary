@@ -84,8 +84,8 @@ WSGI_APPLICATION = 'InvWEB.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'invweb_db',
-        'USER': 'invweb_user',
+        'NAME': 'inventario_db',
+        'USER': 'inventario_User',
         'PASSWORD': 'inventary12345',
         'HOST': 'localhost',
         'PORT': '5432',
