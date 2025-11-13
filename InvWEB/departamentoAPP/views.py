@@ -110,11 +110,8 @@ class DepartamentoDeleteView(LoginRequiredMixin, DeleteView):
         context = super().get_context_data(**kwargs)
         context['is_admin'] = hasattr(self.request.user, 'perfil') and self.request.user.perfil.es_admin
         
-        # ¡NUEVO! Revisamos las dependencias
         depto = self.get_object()
-        # (Asegúrate de tener related_name='perfiles' en usuario/models.py)
         perfiles_asociados = depto.perfiles.count() 
-        # (Asegúrate de tener related_name='stock_items' en movimientoAPP/models.py)
         stock_asociado = depto.stock_items.filter(cantidad__gt=0).count() 
 
         context['perfiles_asociados'] = perfiles_asociados

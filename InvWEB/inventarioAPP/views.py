@@ -28,24 +28,24 @@ from django.db.models import Count
 
 class CategoriaListview(LoginRequiredMixin, ListView):
     model = Categoria
-    template_name = 'categoria/list.html' # CORREGIDO
+    template_name = 'categoria/list.html' 
     context_object_name = 'categoria'
 
 class CategoriaCreateView(LoginRequiredMixin, CreateView):
     model = Categoria
-    template_name = 'categoria/form.html' # CORREGIDO
+    template_name = 'categoria/form.html' 
     form_class = CategoriaForm
     success_url = reverse_lazy('inventarioAPP:categoria_list')
 
 class CategoriaUpdateView(LoginRequiredMixin, UpdateView):
     model = Categoria
-    template_name = 'categoria/form.html' # CORREGIDO
+    template_name = 'categoria/form.html' 
     form_class = CategoriaForm
     success_url = reverse_lazy('inventarioAPP:categoria_list')
 
 class CategoriaDeleteView(LoginRequiredMixin, DeleteView):
     model = Categoria
-    template_name = 'categoria/confirm_delete.html' # CORREGIDO
+    template_name = 'categoria/confirm_delete.html' 
     success_url = reverse_lazy('inventarioAPP:categoria_list')
 
     def get_context_data(self, **kwargs):
@@ -78,7 +78,7 @@ class CategoriaDeleteView(LoginRequiredMixin, DeleteView):
 #producto
 class ProductoListview(LoginRequiredMixin, ListView):
     model = Producto
-    template_name = 'producto/list.html' # CORREGIDO
+    template_name = 'producto/list.html' 
     context_object_name = 'productos'
 
     def get_queryset(self):
@@ -89,7 +89,7 @@ class ProductoListview(LoginRequiredMixin, ListView):
 
 class ProductoCreateView(LoginRequiredMixin, CreateView):
     model = Producto
-    template_name = 'producto/form.html' # CORREGIDO
+    template_name = 'producto/form.html' 
     form_class = ProductoForm
     success_url = reverse_lazy('inventarioAPP:producto_list')
 
