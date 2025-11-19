@@ -9,9 +9,9 @@
             size: a4 portrait;
             margin: 2cm;
 
-            /* Definimos un marco (frame) estático para el pie de página */
-                @frame footer_frame {
-                -pdf-frame-content: footerContent; /* Vincula con el ID del div en el HTML */
+            /* Marco para el pie de página */
+            @frame footer_frame {
+                -pdf-frame-content: footerContent; 
                 bottom: 0cm;
                 margin-left: 2cm;
                 margin-right: 2cm;
@@ -19,16 +19,15 @@
             }
         }
 
-        /* Estilos del pie de página */
         #footerContent {
             text-align: right;
             font-size: 10px;
             color: #666;
         }
 
-        /* --- ESTILOS GENERALES (Tus estilos originales) --- */
+        /* --- TUS ESTILOS ORIGINALES --- */
         body {
-            font-family: Helvetica, Arial, sans-serif; /* xhtml2pdf prefiere fuentes estándar */
+            font-family: Helvetica, Arial, sans-serif;
             font-size: 11px;
             color: #333;
         }
@@ -65,12 +64,7 @@
         .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
         .text-lg { font-size: 14px; }
-        .no-stock {
-            text-align: center;
-            color: #888;
-            padding: 20px;
-            font-style: italic;
-        }
+        .no-stock { text-align: center; color: #888; padding: 20px; font-style: italic; }
         ul { margin: 5px 0; padding-left: 20px; }
     </style>
 </head>
@@ -109,6 +103,7 @@
                 <th>SKU</th>
                 <th class="text-right">Stock Paquetes</th>
                 <th class="text-right">Total Unidades</th>
+                <th class="text-right">Costo Vigente (USD)</th>
             </tr>
         </thead>
         <tbody>
@@ -118,6 +113,7 @@
                 <td>{{ item.producto.sku }}</td>
                 <td class="text-right font-bold text-lg">{{ item.cantidad|floatformat:2 }}</td>
                 <td class="text-right font-bold text-lg">{{ item.total_unidades|floatformat:2 }}</td>
+                <td class="text-right font-bold text-lg">{{ item.costo_maximo_vigente|floatformat:2 }} $</td>
             </tr>
             {% endfor %}
         </tbody>

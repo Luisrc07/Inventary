@@ -208,38 +208,36 @@ class MovimientoUpdateView(LoginRequiredMixin, UpdateView):
 # =========================================================================
 
 def generar_reporte_stock_pdf(request, pk):
-
     depto = get_object_or_404(
         Departamento.objects.prefetch_related(
             'perfiles__user', 
-            'stock_items__producto' # 'stock_items' de tu models.py
+            'stock_items__producto'
         ), 
         pk=pk
     )
 
     perfil = request.user.perfil
     if not perfil.es_admin and perfil.departamento != depto:
-        return HttpResponse("Permiso Denegado. Solo puede ver reportes de su propio departamento.", status=403)
+        return HttpResponse("Permiso Denegado.", status=403)
 
     stock_items = [
         item for item in depto.stock_items.all() if item.cantidad > 0
     ]
+    
     context = {
         'depto': depto,
         'stock_items': stock_items,
         'fecha_actual': timezone.now(), 
     }
     
-    # Renderizamos el template
+    # --- LÓGICA DE XHTML2PDF ---
     template_path = 'stock/reporte_pdf_template.html'
     template = get_template(template_path)
     html = template.render(context)
 
-    # Creamos la respuesta PDF
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="reporte_stock_{depto.nombre}.pdf"'
+    response['Content-Disposition'] = f'inline; filename="reporte_stock_{depto.nombre}.pdf"'
 
-    # Generamos el PDF usando pisa
     pisa_status = pisa.CreatePDF(
        html, dest=response
     )
@@ -248,7 +246,6 @@ def generar_reporte_stock_pdf(request, pk):
        return HttpResponse('Hubo errores al generar el PDF <pre>' + html + '</pre>')
     
     return response
-
 # =========================================================================
 # VISTAS AJAX 
 # =========================================================================

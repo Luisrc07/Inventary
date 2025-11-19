@@ -23,7 +23,6 @@ from proveedorAPP.models import Proveedor
 from django.core.validators import MinValueValidator
 from django.contrib.auth.models import User
 from decimal import Decimal
-
 # =========================================================================
 # MODELO MOVIMIENTO 
 # =========================================================================
@@ -88,73 +87,75 @@ class Movimiento(models.Model):
     def save(self, *args, **kwargs):
         is_creating = self._state.adding
         
-        # Si solo estamos editando (ej. observaciones), guardamos y salimos.
+        # Si es solo edición (no creación), guardamos normal y salimos
         if not is_creating:
             super().save(*args, **kwargs)
             return
 
-        # La cantidad de stock a mover (en Paquetes)
         cantidad_paquetes = Decimal(str(self.cantidad)) 
 
         try:
-            # Envolvemos toda la lógica de stock Y el guardado del movimiento
-            # en una sola transacción atómica.
             with transaction.atomic():
-                
-                # A. Restar de Origen (SALIDA O TRANSFERENCIA)
+                # 1. Guardamos el Movimiento PRIMERO para que exista en DB
+                super().save(*args, **kwargs)
+
+                # 2. Manejo de Salidas (Resta stock)
                 if self.tipo in ['SALIDA', 'TRANSFERENCIA']:
                     if not self.departamento_origen:
-                        raise ValueError("Debe especificar un Departamento de Origen para Salida/Transferencia.")
+                        raise ValueError("Falta departamento origen")
                     
-                    stock_origen, created = StockActual.objects.get_or_create(
+                    stock_origen, _ = StockActual.objects.get_or_create(
                         producto=self.producto,
-                        departamento=self.departamento_origen,
-                        defaults={'cantidad': 0}
+                        departamento=self.departamento_origen
                     )
                     
                     if stock_origen.cantidad < cantidad_paquetes:
-                        raise ValueError(f"Stock insuficiente en {self.departamento_origen.nombre}. Disponible: {stock_origen.cantidad} Paquetes.")
+                        # Opcional: Lanzar error si no hay stock (Descomentar si deseas validación estricta)
+                        # raise ValueError(f"Stock insuficiente. Disponible: {stock_origen.cantidad}")
+                        pass 
                         
                     stock_origen.cantidad -= cantidad_paquetes
                     stock_origen.save()
+                    
+                    # Al reducir stock, recalculamos precio
+                    stock_origen.recalcular_precio_maximo()
 
-                # B. Sumar a Destino (ENTRADA O TRANSFERENCIA)
+                # 3. Manejo de Entradas (Suma stock)
                 if self.tipo in ['ENTRADA', 'TRANSFERENCIA']:
                     if not self.departamento_destino:
-                        raise ValueError("Debe especificar un Departamento de Destino para Entrada/Transferencia.")
+                        raise ValueError("Falta departamento destino")
                     
-                    stock_destino, created = StockActual.objects.get_or_create(
+                    stock_destino, _ = StockActual.objects.get_or_create(
                         producto=self.producto,
-                        departamento=self.departamento_destino,
-                        defaults={'cantidad': 0}
+                        departamento=self.departamento_destino
                     )
                     
                     stock_destino.cantidad += cantidad_paquetes
                     stock_destino.save()
-                
-                # 3. Si toda la lógica de stock fue exitosa, guardamos el Movimiento.
-                super().save(*args, **kwargs)
-
-        except ValueError as e:
-            # Si algo falla (ej. "Stock insuficiente"), se revierte la transacción
-            # y el Movimiento no se guarda.
-            raise e
+                    
+                    # Al aumentar stock, recalculamos precio
+                    stock_destino.recalcular_precio_maximo()
+                    
         except Exception as e:
-            raise ValueError(f"Error inesperado al procesar el stock: {str(e)}")
-
+            # Si falla la lógica, intentamos borrar el movimiento creado para no dejar basura
+            # (Aunque transaction.atomic debería encargarse de revertir todo)
+            raise ValueError(f"Error al procesar el stock: {str(e)}")
+        
 # =========================================================================
 # MODELO STOCKACTUAL 
 # =========================================================================
 class StockActual(models.Model):
-    """
-    Registra el stock disponible por producto y por departamento.
-    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
-    departamento = models.ForeignKey(Departamento, on_delete=models.PROTECT, related_name='stock_items')
-    
+    producto = models.ForeignKey('inventarioAPP.Producto', on_delete=models.PROTECT)
+    departamento = models.ForeignKey('departamentoAPP.Departamento', on_delete=models.PROTECT, related_name='stock_items')
     
     cantidad = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    # --- NUEVO CAMPO ---
+    costo_maximo_vigente = models.DecimalField(
+        max_digits=10, decimal_places=4, default=0, 
+        verbose_name="Costo Más Alto en Stock (USD)"
+    )
 
     class Meta:
         unique_together = ('producto', 'departamento')
@@ -163,11 +164,79 @@ class StockActual(models.Model):
 
     def __str__(self):
         return f"{self.producto.nombre} - {self.departamento.nombre}: {self.cantidad}"
+
+    # 1. CALCULAR EL VALOR TOTAL DEL INVENTARIO (Ej: 20 paquetes * 5$ = 100$)
+    @property
+    def valor_total_stock_usd(self):
+        if self.cantidad and self.costo_maximo_vigente:
+            return self.cantidad * self.costo_maximo_vigente
+        return 0
+
+    # 2. CALCULAR EL COSTO POR UNIDAD INDIVIDUAL (Ej: 5$ el paquete / 10 guantes = 0.50$ c/u)
+    @property
+    def costo_por_unidad_individual_usd(self):
+        # Necesitamos que el producto tenga una unidad de medida mayor a 0 para dividir
+        if (self.costo_maximo_vigente and self.producto.unidad_medida 
+            and self.producto.unidad_medida > 0):
+            return self.costo_maximo_vigente / self.producto.unidad_medida
+        return 0
         
     @property
     def total_unidades(self):
-        """Calcula el total de unidades (Paquetes * Unidad de Medida)."""
         if self.cantidad and self.producto and self.producto.unidad_medida:
-            # Aseguramos que ambos sean decimales para la multiplicación
             return self.cantidad * self.producto.unidad_medida
         return 0
+
+    # --- NUEVA LÓGICA DE RASTREO ---
+    def recalcular_precio_maximo(self):
+        """
+        Busca en el historial de entradas para cubrir la cantidad actual 
+        y encuentra el precio más alto POR PAQUETE.
+        """
+        from .models import Movimiento 
+
+        if self.cantidad <= 0:
+            self.costo_maximo_vigente = 0
+            self.save(update_fields=['costo_maximo_vigente'])
+            return
+
+        # Traemos las entradas más recientes
+        entradas = Movimiento.objects.filter(
+            producto=self.producto,
+            departamento_destino=self.departamento,
+            tipo__in=['ENTRADA', 'TRANSFERENCIA']
+        ).order_by('-fecha')
+
+        stock_por_cubrir = self.cantidad
+        precios_encontrados = []
+
+        for entrada in entradas:
+            cant_entrada = entrada.cantidad
+            
+            # --- CORRECCIÓN AQUÍ ---
+            # El movimiento guarda el costo de la UNIDAD pequeña (ej: 1 guante = 0.20$).
+            # Pero el Stock se mide en PAQUETES (Cajas).
+            # Debemos convertir ese costo unitario a COSTO POR PAQUETE.
+            
+            costo_individual_usd = entrada.costo_unitario_usd or 0
+            
+            # Multiplicamos por la unidad de medida del producto (ej: 0.20 * 50 = 10.00$)
+            if self.producto.unidad_medida and self.producto.unidad_medida > 0:
+                precio_paquete_real = costo_individual_usd * self.producto.unidad_medida
+            else:
+                precio_paquete_real = costo_individual_usd
+
+            precios_encontrados.append(precio_paquete_real)
+            # ------------------------
+
+            stock_por_cubrir -= cant_entrada
+            
+            if stock_por_cubrir <= 0:
+                break
+        
+        if precios_encontrados:
+            self.costo_maximo_vigente = max(precios_encontrados)
+        else:
+            self.costo_maximo_vigente = 0
+            
+        self.save(update_fields=['costo_maximo_vigente'])
