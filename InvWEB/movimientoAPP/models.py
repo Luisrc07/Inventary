@@ -23,6 +23,7 @@ from proveedorAPP.models import Proveedor
 from django.core.validators import MinValueValidator
 from django.contrib.auth.models import User
 from decimal import Decimal
+from django.db.models import Q
 # =========================================================================
 # MODELO MOVIMIENTO 
 # =========================================================================
@@ -188,10 +189,13 @@ class StockActual(models.Model):
         return 0
 
     # --- NUEVA LÓGICA DE RASTREO ---
+    # En models.py dentro de StockActual
+    
     def recalcular_precio_maximo(self):
         """
-        Busca en el historial de entradas para cubrir la cantidad actual 
-        y encuentra el precio más alto POR PAQUETE.
+        Reconstruye el stock actual mirando hacia atrás, pero 
+        DESCONTANDO las salidas intermedias para saber qué lotes 
+        realmente siguen en existencia física.
         """
         from .models import Movimiento 
 
@@ -200,40 +204,67 @@ class StockActual(models.Model):
             self.save(update_fields=['costo_maximo_vigente'])
             return
 
-        # Traemos las entradas más recientes
-        entradas = Movimiento.objects.filter(
+        # 1. Traemos TODOS los movimientos (Entradas Y Salidas) ordenados del más reciente al más viejo
+        movimientos = Movimiento.objects.filter(
             producto=self.producto,
-            departamento_destino=self.departamento,
-            tipo__in=['ENTRADA', 'TRANSFERENCIA']
+            # Filtramos por movimientos que afecten a este departamento (origen o destino)
+            # Usamos Q objects para filtrar movimientos complejos si es necesario, 
+            # pero para este algoritmo basta con saber si entró o salió de AQUÍ.
+        ).filter(
+            models.Q(departamento_destino=self.departamento) | 
+            models.Q(departamento_origen=self.departamento)
         ).order_by('-fecha')
 
         stock_por_cubrir = self.cantidad
+        salidas_acumuladas = Decimal(0) # "Deuda" de productos que salieron
         precios_encontrados = []
 
-        for entrada in entradas:
-            cant_entrada = entrada.cantidad
-            
-            # --- CORRECCIÓN AQUÍ ---
-            # El movimiento guarda el costo de la UNIDAD pequeña (ej: 1 guante = 0.20$).
-            # Pero el Stock se mide en PAQUETES (Cajas).
-            # Debemos convertir ese costo unitario a COSTO POR PAQUETE.
-            
-            costo_individual_usd = entrada.costo_unitario_usd or 0
-            
-            # Multiplicamos por la unidad de medida del producto (ej: 0.20 * 50 = 10.00$)
-            if self.producto.unidad_medida and self.producto.unidad_medida > 0:
-                precio_paquete_real = costo_individual_usd * self.producto.unidad_medida
-            else:
-                precio_paquete_real = costo_individual_usd
-
-            precios_encontrados.append(precio_paquete_real)
-            # ------------------------
-
-            stock_por_cubrir -= cant_entrada
-            
+        for mov in movimientos:
+            # Si ya cubrimos el stock físico actual, terminamos
             if stock_por_cubrir <= 0:
                 break
-        
+
+            cantidad_mov = mov.cantidad
+
+            # CASO A: Es una SALIDA (o Transferencia desde aquí)
+            if (mov.tipo == 'SALIDA' and mov.departamento_origen == self.departamento) or \
+               (mov.tipo == 'TRANSFERENCIA' and mov.departamento_origen == self.departamento):
+                # Acumulamos deuda. Los próximos productos que entren (mirando hacia atrás)
+                # se usarán para "pagar" esta salida, no para el stock actual.
+                salidas_acumuladas += cantidad_mov
+                continue
+
+            # CASO B: Es una ENTRADA (o Transferencia hacia aquí)
+            if (mov.tipo == 'ENTRADA' and mov.departamento_destino == self.departamento) or \
+               (mov.tipo == 'TRANSFERENCIA' and mov.departamento_destino == self.departamento):
+                
+                # Si hay salidas pendientes ("deuda"), esta entrada se consume primero en ellas
+                if salidas_acumuladas > 0:
+                    if cantidad_mov > salidas_acumuladas:
+                        # La entrada cubre toda la salida y sobra
+                        cantidad_mov -= salidas_acumuladas
+                        salidas_acumuladas = 0
+                    else:
+                        # La salida se consume toda esta entrada
+                        salidas_acumuladas -= cantidad_mov
+                        cantidad_mov = 0 # No sobra nada para el stock actual
+                        continue # Pasamos al siguiente movimiento
+
+                # Si después de pagar salidas, queda cantidad, esa es parte de nuestro stock actual
+                if cantidad_mov > 0:
+                    # Calculamos el precio real por paquete (tu corrección anterior)
+                    costo_unitario = mov.costo_unitario_usd or 0
+                    if self.producto.unidad_medida and self.producto.unidad_medida > 0:
+                        precio_paquete = costo_unitario * self.producto.unidad_medida
+                    else:
+                        precio_paquete = costo_unitario
+
+                    precios_encontrados.append(precio_paquete)
+                    
+                    # Restamos lo que tomamos de lo que necesitamos cubrir
+                    stock_por_cubrir -= cantidad_mov
+
+        # Calculamos el máximo de lo que realmente queda
         if precios_encontrados:
             self.costo_maximo_vigente = max(precios_encontrados)
         else:
