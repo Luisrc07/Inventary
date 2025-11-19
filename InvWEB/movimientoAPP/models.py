@@ -88,19 +88,44 @@ class Movimiento(models.Model):
     def save(self, *args, **kwargs):
         is_creating = self._state.adding
         
-        # Si es solo edición (no creación), guardamos normal y salimos
+        # Si es edición simple, guardamos y salimos.
         if not is_creating:
             super().save(*args, **kwargs)
             return
 
         cantidad_paquetes = Decimal(str(self.cantidad)) 
 
+        # --- NUEVA LÓGICA DE HERENCIA DE COSTO ---
+        # Si es una TRANSFERENCIA, debemos copiar el precio actual del Origen
+        if self.tipo == 'TRANSFERENCIA' and self.departamento_origen:
+            try:
+                # Buscamos el stock del departamento que envía el producto
+                stock_origen = StockActual.objects.get(
+                    producto=self.producto, 
+                    departamento=self.departamento_origen
+                )
+                
+                # Obtenemos su costo vigente (Precio por Paquete)
+                costo_origen_paquete = stock_origen.costo_maximo_vigente
+                
+                # Convertimos a Costo Unitario para guardarlo en el Movimiento
+                # (Recordemos que Movimiento guarda precio por unidad chiquita, no por paquete)
+                if self.producto.unidad_medida and self.producto.unidad_medida > 0:
+                    self.costo_unitario_usd = costo_origen_paquete / self.producto.unidad_medida
+                else:
+                    self.costo_unitario_usd = costo_origen_paquete
+                    
+            except StockActual.DoesNotExist:
+                # Si el origen no tiene stock registrado (raro), el precio se va en 0
+                self.costo_unitario_usd = 0
+        # -----------------------------------------
+
         try:
             with transaction.atomic():
-                # 1. Guardamos el Movimiento PRIMERO para que exista en DB
+                # 1. Guardamos el Movimiento (Ahora YA TIENE PRECIO)
                 super().save(*args, **kwargs)
 
-                # 2. Manejo de Salidas (Resta stock)
+                # 2. Manejo de Salidas (Restar del Origen)
                 if self.tipo in ['SALIDA', 'TRANSFERENCIA']:
                     if not self.departamento_origen:
                         raise ValueError("Falta departamento origen")
@@ -110,18 +135,11 @@ class Movimiento(models.Model):
                         departamento=self.departamento_origen
                     )
                     
-                    if stock_origen.cantidad < cantidad_paquetes:
-                        # Opcional: Lanzar error si no hay stock (Descomentar si deseas validación estricta)
-                        # raise ValueError(f"Stock insuficiente. Disponible: {stock_origen.cantidad}")
-                        pass 
-                        
                     stock_origen.cantidad -= cantidad_paquetes
                     stock_origen.save()
-                    
-                    # Al reducir stock, recalculamos precio
                     stock_origen.recalcular_precio_maximo()
 
-                # 3. Manejo de Entradas (Suma stock)
+                # 3. Manejo de Entradas (Sumar al Destino)
                 if self.tipo in ['ENTRADA', 'TRANSFERENCIA']:
                     if not self.departamento_destino:
                         raise ValueError("Falta departamento destino")
@@ -134,13 +152,13 @@ class Movimiento(models.Model):
                     stock_destino.cantidad += cantidad_paquetes
                     stock_destino.save()
                     
-                    # Al aumentar stock, recalculamos precio
+                    # Ahora al recalcular, el sistema verá este movimiento de Transferencia
+                    # Y como ya le pusimos precio (self.costo_unitario_usd), 
+                    # Sistemas sabrá que valen dinero.
                     stock_destino.recalcular_precio_maximo()
                     
         except Exception as e:
-            # Si falla la lógica, intentamos borrar el movimiento creado para no dejar basura
-            # (Aunque transaction.atomic debería encargarse de revertir todo)
-            raise ValueError(f"Error al procesar el stock: {str(e)}")
+            raise ValueError(f"Error al procesar movimiento: {str(e)}")
         
 # =========================================================================
 # MODELO STOCKACTUAL 
@@ -241,14 +259,13 @@ class StockActual(models.Model):
                 # Si hay salidas pendientes ("deuda"), esta entrada se consume primero en ellas
                 if salidas_acumuladas > 0:
                     if cantidad_mov > salidas_acumuladas:
-                        # La entrada cubre toda la salida y sobra
                         cantidad_mov -= salidas_acumuladas
                         salidas_acumuladas = 0
                     else:
-                        # La salida se consume toda esta entrada
+
                         salidas_acumuladas -= cantidad_mov
-                        cantidad_mov = 0 # No sobra nada para el stock actual
-                        continue # Pasamos al siguiente movimiento
+                        cantidad_mov = 0 # 
+                        continue 
 
                 # Si después de pagar salidas, queda cantidad, esa es parte de nuestro stock actual
                 if cantidad_mov > 0:
