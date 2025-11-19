@@ -4,21 +4,36 @@
     <meta charset="UTF-8">
     <title>Reporte de Stock - {{ depto.nombre }}</title>
     <style>
+        /* --- CONFIGURACIÓN ESPECÍFICA PARA XHTML2PDF --- */
         @page {
-            size: A4;
+            size: a4 portrait;
             margin: 2cm;
-            @bottom-right {
-                content: "Página " counter(page) " de " counter(pages);
-                font-size: 10px;
+
+            /* Definimos un marco (frame) estático para el pie de página */
+                @frame footer_frame {
+                -pdf-frame-content: footerContent; /* Vincula con el ID del div en el HTML */
+                bottom: 0cm;
+                margin-left: 2cm;
+                margin-right: 2cm;
+                height: 1cm;
             }
         }
+
+        /* Estilos del pie de página */
+        #footerContent {
+            text-align: right;
+            font-size: 10px;
+            color: #666;
+        }
+
+        /* --- ESTILOS GENERALES (Tus estilos originales) --- */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            font-size: 11px; /* Ligeramente más pequeño para más datos */
+            font-family: Helvetica, Arial, sans-serif; /* xhtml2pdf prefiere fuentes estándar */
+            font-size: 11px;
             color: #333;
         }
         h1 {
-            color: #2c5282; /* Azul oscuro */
+            color: #2c5282;
             border-bottom: 2px solid #e2e8f0;
             padding-bottom: 5px;
             font-size: 22px;
@@ -37,7 +52,7 @@
         }
         th, td {
             border: 1px solid #ddd;
-            padding: 8px; /* Un poco menos de padding */
+            padding: 8px;
             text-align: left;
         }
         th {
@@ -60,7 +75,11 @@
     </style>
 </head>
 <body>
-    
+
+    <div id="footerContent">
+        Página <pdf:pagenumber> de <pdf:pagecount>
+    </div>
+
     <h1>Reporte de Stock: {{ depto.nombre }}</h1>
     
     <div class="header-info">
@@ -80,7 +99,7 @@
             <p style="margin-top: 5px; font-style: italic;">Sin usuarios asignados.</p>
             {% endif %}
         {% endwith %}
-        </div>
+    </div>
 
     {% if stock_items %}
     <table>

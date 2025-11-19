@@ -28,6 +28,9 @@ from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
+from xhtml2pdf import pisa
+from django.template.loader import get_template
+
 
 # --- Importaciones de Modelos ---
 # (Usando los nombres de tus models.py)
@@ -41,8 +44,6 @@ from .forms import MovimientoForm
 # --- ¡IMPORTACIONES CLAVE DE PERMISOS! ---
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
-# --- Importaciones para PDF ---
-from weasyprint import HTML
 
 # =========================================================================
 # VISTAS DE STOCK (CON PERMISOS)
@@ -230,12 +231,23 @@ def generar_reporte_stock_pdf(request, pk):
         'fecha_actual': timezone.now(), 
     }
     
-    html_string = render_to_string('stock/reporte_pdf_template.html', context)
-    html = HTML(string=html_string, base_url=request.build_absolute_uri())
-    pdf = html.write_pdf()
+    # Renderizamos el template
+    template_path = 'stock/reporte_pdf_template.html'
+    template = get_template(template_path)
+    html = template.render(context)
 
-    response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = f'inline; filename="reporte_stock_{depto.nombre}.pdf"'
+    # Creamos la respuesta PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="reporte_stock_{depto.nombre}.pdf"'
+
+    # Generamos el PDF usando pisa
+    pisa_status = pisa.CreatePDF(
+       html, dest=response
+    )
+
+    if pisa_status.err:
+       return HttpResponse('Hubo errores al generar el PDF <pre>' + html + '</pre>')
+    
     return response
 
 # =========================================================================
