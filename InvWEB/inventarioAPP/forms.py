@@ -21,7 +21,7 @@ from django.forms import (
     TextInput, Textarea, Select, NumberInput, CheckboxInput
 )
 
-# Estilo de Tailwind que usas
+
 tailwind_class = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500'
 tailwind_checkbox = 'h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500'
 
@@ -36,24 +36,24 @@ class CategoriaForm(forms.ModelForm):
         }
 
 # =========================================================================
-# FORMULARIO DE PRODUCTO (CORREGIDO)
+# FORMULARIO DE PRODUCTO 
 # =========================================================================
 class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
         
-        # --- ¡CORRECCIÓN 1: Añadir campos a la lista! ---
+        # ---  Añadir campos a la lista! ---
         fields = [
             'nombre', 
             'sku', 
             'categoria', 
             'descripcion', 
             'unidad_medida', 
-            'stock_minimo', # <-- AÑADIDO
-            'activo'        # <-- AÑADIDO
+            'stock_minimo', 
+            'activo',
         ]
         
-        # --- ¡CORRECCIÓN 2: Añadir widgets para los campos nuevos! ---
+        # --- Añadir widgets para los campos nuevos! ---
         widgets = {
             'nombre': TextInput(attrs={'class': tailwind_class}),
             'sku': TextInput(attrs={'class': tailwind_class, 'Style':'text-transform : uppercase ;'}),
@@ -66,7 +66,7 @@ class ProductoForm(forms.ModelForm):
             'activo': CheckboxInput(attrs={'class': tailwind_checkbox, 'style': 'margin-top: 1px;'}),
         }
 
-        # --- CORRECCIÓN 3: Añadir etiquetas y ayuda para mejor UI ---
+        #  Añadir etiquetas y ayuda para mejor UI ---
         labels = {
             'sku': 'SKU (Código de Producto)',
             'unidad_medida': 'Unidades por Paquete (Ej: 100)',

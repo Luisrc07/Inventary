@@ -19,12 +19,11 @@ from django.shortcuts import redirect
 from django.views.generic import FormView
 from django.urls import reverse_lazy
 from usuario.forms import RegistroForm
-# ¡Importamos los dos Mixins que necesitamos!
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.models import User # ¡Importa el modelo User!
-from .forms import RegistroForm, UserUpdateForm # ¡Importa el nuevo form!
-from .models import PerfilUsuario # ¡Importa PerfilUsuario!
-from django.views.generic import ListView, UpdateView # ¡Importa ListView y UpdateView!
+from django.contrib.auth.models import User 
+from .forms import RegistroForm, UserUpdateForm 
+from .models import PerfilUsuario 
+from django.views.generic import ListView, UpdateView 
 from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
 
@@ -33,7 +32,7 @@ from django.utils.decorators import method_decorator
 class RegistroUsuarioView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     template_name = 'usuario/registro.html'
     form_class = RegistroForm
-    success_url = reverse_lazy('movimientoAPP:inicio') # A donde quieras
+    success_url = reverse_lazy('movimientoAPP:inicio')
 
     def test_func(self):
         """
@@ -71,15 +70,12 @@ def root_redirect_view(request):
     # [cite_start]Redirige a la URL 'login' de tu app 'usuario' [cite: 5]
     return redirect('usuario:login')
         
-    # --- YA NO NECESITAS EL MÉTODO 'get' ---
-    # El 'UserPassesTestMixin' se encarga de toda la seguridad
-    # por lo que puedes BORRAR tu método get() anterior.
 
-# --- NUEVA VISTA: LISTA DE USUARIOS ---
+
 @method_decorator(never_cache, name='dispatch')
 class UserListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = User
-    template_name = 'usuario/user_list.html' # Una nueva plantilla
+    template_name = 'usuario/user_list.html' 
     context_object_name = 'usuarios'
 
     def test_func(self):
@@ -91,13 +87,13 @@ class UserListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return User.objects.all().select_related('perfil__departamento')
 
 
-# --- NUEVA VISTA: EDITAR USUARIO ---
+
 @method_decorator(never_cache, name='dispatch')
 class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    model = PerfilUsuario # ¡Editamos el Perfil!
+    model = PerfilUsuario 
     form_class = UserUpdateForm
-    template_name = 'usuario/user_form.html' # Una nueva plantilla
-    success_url = reverse_lazy('usuario:user_list') # Vuelve a la lista
+    template_name = 'usuario/user_form.html' 
+    success_url = reverse_lazy('usuario:user_list') 
 
     def test_func(self):
         # Solo Admins pueden editar

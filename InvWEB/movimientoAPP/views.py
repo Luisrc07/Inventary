@@ -88,7 +88,7 @@ class StockListview(LoginRequiredMixin, ListView):
 
 @method_decorator(never_cache, name='dispatch')
 class MovimientoListview(LoginRequiredMixin, ListView):
-    # ... (Sin cambios) ...
+
     model = Movimiento
     template_name = 'movimiento/list.html'
     context_object_name = 'movimientos'
@@ -132,7 +132,7 @@ class MovimientoListview(LoginRequiredMixin, ListView):
 
 @method_decorator(never_cache, name='dispatch')
 class MovimientoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    # ... (Sin cambios) ...
+
     model = Movimiento
     template_name = 'movimiento/form.html'
     form_class = MovimientoForm
@@ -149,8 +149,7 @@ class MovimientoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # ¡IMPORTANTE! Modificamos productos_data
-        # Ahora usamos 'unidad_medida' de tu 'models.py'
+
         productos_data = {
             str(p.id): str(p.unidad_medida) 
             for p in Producto.objects.filter(activo=True)
@@ -167,7 +166,7 @@ class MovimientoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return context
     
     def form_valid(self, form):
-        # ... (Sin cambios) ...
+
         form.instance.usuario_registra = self.request.user
         tipo = form.cleaned_data.get('tipo')
         
@@ -193,7 +192,7 @@ class MovimientoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
 @method_decorator(never_cache, name='dispatch')
 class MovimientoUpdateView(LoginRequiredMixin, UpdateView):
-    # ... (Sin cambios) ...
+
     model = Movimiento
     template_name = 'movimiento/form.html'
     fields = ['observaciones'] 
@@ -209,7 +208,7 @@ class MovimientoUpdateView(LoginRequiredMixin, UpdateView):
 # =========================================================================
 
 def generar_reporte_stock_pdf(request, pk):
-    # ... (Sin cambios) ...
+
     depto = get_object_or_404(
         Departamento.objects.prefetch_related(
             'perfiles__user', 
@@ -251,7 +250,7 @@ def generar_reporte_stock_pdf(request, pk):
     return response
 
 # =========================================================================
-# VISTAS AJAX (¡MODIFICADAS Y NUEVAS!)
+# VISTAS AJAX 
 # =========================================================================
 
 def load_categorias(request):
@@ -312,8 +311,8 @@ def get_stock_departamento(request):
         stock_agrupado[categoria_nombre].append({
             'nombre': item.producto.nombre,
             'cantidad': item.cantidad,
-            'unidad_medida': item.producto.unidad_medida, # 'unidad_medida' de tu models.py
-            'total_unidades': item.total_unidades # 'total_unidades' de tu models.py
+            'unidad_medida': item.producto.unidad_medida, # 'unidad_medida' de  models.py
+            'total_unidades': item.total_unidades # 'total_unidades' de  models.py
         })
     
     # Esta línea es la que fallaba porque no encontraba el archivo
@@ -356,7 +355,7 @@ def load_productos(request):
                 'id': str(producto.pk),
                 'nombre': f"{producto.nombre} ({producto.unidad_medida} u/paq)",
                 'stock': str(stock_dict.get(str(producto.pk), 0)),
-                'unidad_medida': str(producto.unidad_medida) # <-- ¡NUEVO!
+                'unidad_medida': str(producto.unidad_medida) 
             })
     
     else:
@@ -366,7 +365,7 @@ def load_productos(request):
                 'id': str(producto.pk), 
                 'nombre': f"{producto.nombre} ({producto.unidad_medida} u/paq)",
                 'stock': None,
-                'unidad_medida': str(producto.unidad_medida) # <-- ¡NUEVO!
+                'unidad_medida': str(producto.unidad_medida)
             })
             
     return JsonResponse(productos_list, safe=False)

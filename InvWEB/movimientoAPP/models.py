@@ -25,7 +25,7 @@ from django.contrib.auth.models import User
 from decimal import Decimal
 
 # =========================================================================
-# MODELO MOVIMIENTO (CORRECTO - USANDO DECIMAL)
+# MODELO MOVIMIENTO 
 # =========================================================================
 class Movimiento(models.Model):
     TIPO_CHOICES = [
@@ -65,7 +65,7 @@ class Movimiento(models.Model):
     def __str__(self):
         return f"{self.tipo} de {self.producto.nombre} - {self.fecha.strftime('%d/%m/%Y')}"
 
-    # ... (Tus propiedades @property costo_total_bs, ref_unitario_usd, total_unidades están bien) ...
+ 
     @property
     def costo_total_bs(self):
         if self.costo_unitario_bs and self.cantidad:
@@ -73,7 +73,7 @@ class Movimiento(models.Model):
         return None
 
     @property
-    def ref_unitario_paquete_usd(self): # <--- CAMBIO DE NOMBRE (antes ref_unitario_usd)
+    def ref_unitario_paquete_usd(self): 
         if self.costo_unitario_bs and self.tasa_cambio and self.tasa_cambio > 0:
             return self.costo_unitario_bs / self.tasa_cambio
         return None
@@ -143,7 +143,7 @@ class Movimiento(models.Model):
             raise ValueError(f"Error inesperado al procesar el stock: {str(e)}")
 
 # =========================================================================
-# MODELO STOCKACTUAL (¡CAMBIO CRÍTICO!)
+# MODELO STOCKACTUAL 
 # =========================================================================
 class StockActual(models.Model):
     """
@@ -153,8 +153,7 @@ class StockActual(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
     departamento = models.ForeignKey(Departamento, on_delete=models.PROTECT, related_name='stock_items')
     
-    # --- ¡ESTE ES EL CAMBIO MÁS IMPORTANTE! ---
-    # Debe ser DecimalField para ser consistente con Movimiento.cantidad
+    
     cantidad = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:

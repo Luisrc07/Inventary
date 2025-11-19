@@ -27,26 +27,25 @@ from django.db.models import ProtectedError
 # Create your views here.
 class ProveedorListview(LoginRequiredMixin, ListView):
     model = Proveedor
-    template_name = 'proveedor/list.html' # CORREGIDO
+    template_name = 'proveedor/list.html' 
     context_object_name = 'proveedores'
 
 class ProveedorCreateView(LoginRequiredMixin, CreateView):
     model = Proveedor
-    template_name = 'proveedor/form.html' # CORREGIDO
+    template_name = 'proveedor/form.html' 
     form_class = ProveedorForm
     success_url = reverse_lazy('proveedorAPP:prov_list')
 
 class ProveedorUpdateView(LoginRequiredMixin, UpdateView):
     model = Proveedor
-    template_name = 'proveedor/form.html' # CORREGIDO
+    template_name = 'proveedor/form.html' 
     form_class = ProveedorForm
     success_url = reverse_lazy('proveedorAPP:prov_list')
 
 class ProveedorDeleteView(LoginRequiredMixin, DeleteView):
     model = Proveedor
-    # Asegúrate de que esta ruta de plantilla sea correcta
     template_name = 'proveedor/confirm_delete.html'
-    success_url = reverse_lazy('proveedorAPP:prov_list') # O como se llame tu lista
+    success_url = reverse_lazy('proveedorAPP:prov_list') 
 
     def get_context_data(self, **kwargs):
         """

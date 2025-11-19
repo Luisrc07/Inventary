@@ -23,7 +23,6 @@ from departamentoAPP.models import Departamento
 
 class RegistroForm(forms.Form):
     
-    # --- ¡LOS CAMPOS QUE FALTABAN ESTÁN AQUÍ! ---
     
     username = forms.CharField(
         label="Nombre de Usuario",
@@ -50,17 +49,14 @@ class RegistroForm(forms.Form):
         help_text="Solo requerido si el Rol es Gerente u Operador."
     )
     
-    # --- Tus métodos (estos ya estaban bien) ---
 
     def clean(self):
         cleaned_data = super().clean()
         rol = cleaned_data.get('rol')
         departamento = cleaned_data.get('departamento')
 
-        # Esta validación la tenías en tu forms.py y es correcta 
         if rol != PerfilUsuario.ROL_ADMIN and not departamento:
             raise forms.ValidationError("Un Gerente o un Operador debe estar asignado a un departamento.")
-        # [cite_end]
         
         # Validar que el username no exista
         username = cleaned_data.get('username')
@@ -70,7 +66,6 @@ class RegistroForm(forms.Form):
         return cleaned_data
 
     def save(self):
-        # Tu método save también es correcto 
         user = User.objects.create_user(
             username=self.cleaned_data['username'],
             password=self.cleaned_data['password']
@@ -80,7 +75,6 @@ class RegistroForm(forms.Form):
         perfil.rol = self.cleaned_data['rol']
         perfil.departamento = self.cleaned_data['departamento']
         perfil.save()
-        # [cite_end]
 
         return user
     
@@ -90,13 +84,11 @@ class UserUpdateForm(forms.ModelForm):
     los datos de login de un usuario.
     """
     
-    # --- CAMPO AÑADIDO ---
     username = forms.CharField(
         label="Nombre de Usuario", 
         required=True
     )
     
-    # --- CAMPO AÑADIDO ---
     password = forms.CharField(
         label="Nueva Contraseña", 
         required=False, 
@@ -104,7 +96,6 @@ class UserUpdateForm(forms.ModelForm):
         help_text="Dejar en blanco para no cambiar la contraseña."
     )
     
-    # Este campo ya lo tenías
     is_active = forms.BooleanField(
         label="Usuario Activo (Puede iniciar sesión)",
         required=False,
@@ -124,8 +115,8 @@ class UserUpdateForm(forms.ModelForm):
         if self.instance and self.instance.user:
             # Asigna el estado actual (True/False) del User al checkbox
             self.fields['is_active'].initial = self.instance.user.is_active
-            
-            # --- LÍNEA AÑADIDA ---
+
+
             # Asigna el nombre de usuario actual al campo de texto
             self.fields['username'].initial = self.instance.user.username
 
