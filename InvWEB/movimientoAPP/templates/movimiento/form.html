@@ -1,617 +1,358 @@
 {% extends 'base.html' %} 
 
-{% block tittle %}{% if object %}Editar Movimiento{% else %}Crear Movimiento{% endif %}{% endblock %}
+{% block tittle %}
+    {% if is_edit_mode %}Editar Movimiento{% else %}Registrar Movimiento{% endif %}
+{% endblock %}
 
 {% block head_includes %}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
 <style>
-    /* ... (Estilos de Select2 sin cambios) ... */
-    .select2-results__option {
-        color: black; 
-    }
-    .select2-results__option--highlighted {
-        color: white;
-    }
+    .select2-container { width: 100% !important; }
+    .select2-selection { height: 38px !important; display: flex !important; align-items: center !important; border-color: #d1d5db !important; }
+    .hidden-col { display: none; }
+    .stock-panel { transition: all 0.3s ease; max-height: 300px; overflow-y: auto; }
+    .stock-panel::-webkit-scrollbar { width: 6px; }
+    .stock-panel::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
 </style>
 {% endblock %}
 
 {% block content %}
-<h1 class="text-3xl font-bold text-gray-800 mb-4 border-b pb-2">
-    {% if object %}Editar Observación{% else %}Crear Nuevo Movimiento{% endif %}
-</h1>
+<div class="max-w-7xl mx-auto pb-10">
+    <div class="flex justify-between items-center mb-6 border-b pb-2">
+        <h1 class="text-3xl font-bold text-gray-800">
+            {% if is_edit_mode %}Editar Observación{% else %}Nuevo Movimiento{% endif %}
+        </h1>
+        {% if not is_edit_mode %}
+        <span class="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2 py-1 rounded">
+            Carga Múltiple Activa
+        </span>
+        {% endif %}
+    </div>
 
-<div class="bg-white p-8 rounded-xl shadow-lg max-w-5xl mx-auto text-black">
+    {% if is_edit_mode %}
+    <div class="bg-white p-8 rounded-xl shadow-lg max-w-2xl mx-auto">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="block text-gray-700 font-bold mb-2">Observaciones</label>
+                {{ form.observaciones }}
+            </div>
+            <div class="flex justify-end gap-4 mt-6">
+                <a href="{% url 'movimientoAPP:movimiento_list' %}" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-gray-700">Cancelar</a>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-bold">Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 md:gap-8">
+    {% else %}
+    <form method="post" id="form-masivo">
+        {% csrf_token %}
         
-        <div class="md:col-span-2">
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-6 border border-gray-100">
+            <h2 class="text-lg font-bold text-indigo-700 mb-4 border-b pb-1">Datos Generales de la Transacción</h2>
             
-            <form method="post" >
-                {% csrf_token %}
-
-                {% if form.non_field_errors %}
-                    <div class="p-4 bg-red-50 border-l-4 border-red-400 text-red-700 mb-3 rounded-md" role="alert">
-                        <p class="font-bold">Error en el Movimiento</p>
-                        {{ form.non_field_errors.as_text }}
-                    </div>
-                {% endif %}
-                
-                <div class="flex flex-col mb-3" id="field_tipo_wrapper"> 
-                    <label for="{{ form.tipo.id_for_label }}" class="mb-1 font-medium text-black">
-                        {{ form.tipo.label }}
-                    </label>
-                    {{ form.tipo }} 
-                    {% if form.tipo.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.tipo.errors.as_text }}</p>
-                    {% endif %}
+            {% if cabecera_form.errors %}
+                <div class="bg-red-50 text-red-700 p-3 rounded mb-4 text-sm font-bold border-l-4 border-red-500">
+                    Por favor revise los errores en la cabecera: {{ cabecera_form.errors }}
                 </div>
+            {% endif %}
 
-                <div class="flex flex-col mb-3" id="field_departamento_origen_wrapper"> 
-                    <label for="{{ form.departamento_origen.id_for_label }}" class="mb-1 font-medium text-black">
-                        {{ form.departamento_origen.label }}
-                    </label>
-                    {{ form.departamento_origen }} 
-                    {% if form.departamento_origen.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.departamento_origen.errors.as_text }}</p>
-                    {% endif %}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Tipo de Movimiento</label>
+                    {{ cabecera_form.tipo }}
                 </div>
                 
-                <div class="flex flex-col mb-3" id="field_categoria_select_wrapper"> 
-                    <label for="{{ form.categoria_select.id_for_label }}" class="mb-1 font-medium text-black">
-                        {{ form.categoria_select.label }}
-                    </label>
-                    {{ form.categoria_select }} 
-                    {% if form.categoria_select.errors %}
-                        <p class="mt-1 text-sm text-red-600 ">{{ form.categoria_select.errors.as_text }}</p>
-                    {% endif %}
+                <div id="wrapper-origen">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Departamento Origen</label>
+                    {{ cabecera_form.departamento_origen }}
+                </div>
+                
+                <div id="wrapper-destino">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Departamento Destino</label>
+                    {{ cabecera_form.departamento_destino }}
                 </div>
 
-                <div class="flex flex-col mb-3" id="field_producto_wrapper"> 
-                    <label for="{{ form.producto.id_for_label }}" class="mb-1 font-medium text-black">
-                        {{ form.producto.label }}
-                    </label>
-                    {{ form.producto }} 
-                    {% if form.producto.errors %}
-                        <p class="mt-1 text-sm text-red-600 ">{{ form.producto.errors.as_text }}</p>
-                    {% endif %}
+                <div id="wrapper-proveedor" class="hidden">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Proveedor</label>
+                    {{ cabecera_form.proveedor }}
                 </div>
-
-
-                <div class="flex flex-col mb-3" id="field_cantidad_wrapper"> 
-                    <label for="{{ form.cantidad.id_for_label }}" class="mb-1 font-medium text-black">
-                        {{ form.cantidad.label }}
-                    </label>
-                    {{ form.cantidad }} 
-                    {% if form.cantidad.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.cantidad.errors.as_text }}</p>
-                    {% endif %}
-
-                    <div id="calculo_wrapper" class="p-3 bg-gray-50 rounded-md mt-2 text-sm" style="display: none;">
-                        <span class="font-medium text-gray-600">Cantidad por Paquete: </span>
-                        <span id="unidad_display" class="font-bold text-indigo-600">...</span>
-                        <br>
-                        <span class="font-medium text-gray-600">Total de Unidades a Mover: </span>
-                        <span id="total_display" class="font-bold text-indigo-600">...</span>
-                    </div>
-
-                    <div id="stock_disponible_wrapper" class="p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded-md mt-2 text-sm" style="display: none;">
-                        <span class="font-medium text-yellow-800">Stock Disponible (Origen): </span>
-                        
-                        <span id="stock_disponible_display" class="font-bold text-yellow-900">...</span>
-                        <span class="font-normal text-yellow-700">paquetes</span>
-                        
-                        <span class="text-gray-600 italic ml-2">(Total: </span>
-                        <span id="stock_unidades_display" class="font-bold text-yellow-800">...</span>
-                        <span class="text-gray-600 italic"> unidades)</span>
-                    </div>
-                    </div>
-
-                <div class="flex flex-col mb-3" id="field_departamento_destino_wrapper"> 
-                    <label for="{{ form.departamento_destino.id_for_label }}" class="mb-1 font-medium text-black">
-                        {{ form.departamento_destino.label }}
-                    </label>
-                    {{ form.departamento_destino }} 
-                    {% if form.departamento_destino.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.departamento_destino.errors.as_text }}</p>
-                    {% endif %}
+                <div id="wrapper-factura" class="hidden">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">N° Factura / Referencia</label>
+                    {{ cabecera_form.numero_factura }}
                 </div>
-
-                <div class="flex flex-col mb-3" id="field_proveedor_wrapper"> 
-                    <label for="{{ form.proveedor.id_for_label }}" class="mb-1 font-medium text-black">
-                        {{ form.proveedor.label }}
-                    </label>
-                    {{ form.proveedor }} 
-                    {% if form.proveedor.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.proveedor.errors.as_text }}</p>
-                    {% endif %}
+                <div id="wrapper-tasa" class="hidden">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Tasa de Cambio (Bs./USD)</label>
+                    {{ cabecera_form.tasa_cambio }}
                 </div>
-
-                <div class="flex flex-col mb-3" id="field_numero_factura_wrapper"> 
-                    <label for="{{ form.numero_factura.id_for_label }}" class="mb-1 font-medium text-black">
-                        {{ form.numero_factura.label }}
-                    </label>
-                    {{ form.numero_factura }} 
-                    {% if form.numero_factura.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.numero_factura.errors.as_text }}</p>
-                    {% endif %}
-                </div>
-
-                <div class="flex flex-col mb-3" id="field_costo_unitario_bs_wrapper"> 
-                    <label for="{{ form.costo_unitario_bs.id_for_label }}" class="mb-1 font-medium text-black">
-                        {{ form.costo_unitario_bs.label }}
-                    </label>
-                    {{ form.costo_unitario_bs }} 
-                    {% if form.costo_unitario_bs.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.costo_unitario_bs.errors.as_text }}</p>
-                    {% endif %}
-                </div>
-
-                <div class="flex flex-col mb-3" id="field_tasa_cambio_wrapper"> 
-                    <label for="{{ form.tasa_cambio.id_for_label }}" class="mb-1 font-medium text-black">
-                        {{ form.tasa_cambio.label }}
-                    </label>
-                    {{ form.tasa_cambio }} 
-                    {% if form.tasa_cambio.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.tasa_cambio.errors.as_text }}</p>
-                    {% endif %}
-                    
-                    <div id="calculo_usd_wrapper" class="p-3 bg-indigo-50 border-l-4 border-indigo-400 rounded-md mt-2 text-sm" style="display: none;">
-                        <p class="font-bold text-indigo-700 mb-1">Cálculo de Referencia (USD):</p>
-                        
-                        <div class="flex justify-between">
-                            <span class="font-medium text-gray-700">REF Unitario (USD) por PAQUETE: </span>
-                            <span id="ref_paquete_usd_display" class="font-bold text-indigo-600">$0.00</span>
-                        </div>
-
-                        <div class="flex justify-between">
-                            <span class="font-medium text-gray-700">REF Unitario (USD) por UNIDAD: </span>
-                            <span id="ref_unitario_usd_display" class="font-bold text-indigo-600">$0.0000</span>
-                        </div>
-                        
-                        <div class="flex justify-between">
-                            <span class="font-medium text-gray-700">Costo Total Estimado (USD): </span>
-                            <span id="costo_total_usd_display" class="font-bold text-indigo-600">$0.00</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex flex-col mb-3" id="field_observaciones_wrapper"> 
-                    <label for="{{ form.observaciones.id_for_label }}" class="mb-1 font-medium text-black">
-                        {{ form.observaciones.label }}
-                    </label>
-                    {{ form.observaciones }} 
-                    {% if form.observaciones.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ form.observaciones.errors.as_text }}</p>
-                    {% endif %}
-                </div>
-
-
-                {% url 'movimientoAPP:movimiento_list' as cancel_url %}
-
-                 <div class="flex justify-start items-center pt-6 border-t mt-6 space-x-4">
-                    
-                    <button type="submit" 
-                            class="flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md cursor-pointer">
-                        <i class="fas fa-save mr-2"></i> Guardar Movimiento
-                    </button>
-                    
-                    <a href="{{ cancel_url }}" 
-                       class="text-gray-600 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition duration-150 flex items-center justify-center shadow">
-                        <i class="fas fa-times mr-2"></i> Cancelar
-                    </a>
-                    
-                </div>
-            </form>
-
-        </div> 
-        
-        <div class="md:col-span-1 mt-6 md:mt-0" id="info-panels-wrapper" style="display: none;">
+            </div>
             
-            <div id="stock-origen-panel" class="space-y-4" style="display: none;">
-                </div>
+            <div class="mt-4">
+                <label class="block text-sm font-medium text-gray-700">Observaciones Globales</label>
+                {{ cabecera_form.observaciones }}
+            </div>
             
-            <div id="stock-destino-panel" class="space-y-4 mt-6" style="display: none;">
+            <div id="info-panels-wrapper" class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 border-t pt-4 hidden">
+                <div id="panel-origen-container" class="hidden">
+                    <h3 class="text-sm font-bold text-red-600 mb-2 flex items-center"><i class="fas fa-arrow-circle-up mr-2"></i> Stock en Origen</h3>
+                    <div id="stock-origen-content" class="stock-panel bg-red-50 p-3 rounded-lg border border-red-100 text-sm text-gray-700">
+                        <p class="text-gray-400 italic">Seleccione un departamento...</p>
+                    </div>
                 </div>
-        </div> 
+                <div id="panel-destino-container" class="hidden">
+                    <h3 class="text-sm font-bold text-green-600 mb-2 flex items-center"><i class="fas fa-arrow-circle-down mr-2"></i> Stock en Destino</h3>
+                    <div id="stock-destino-content" class="stock-panel bg-green-50 p-3 rounded-lg border border-green-100 text-sm text-gray-700">
+                        <p class="text-gray-400 italic">Seleccione un departamento...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-6 border border-gray-100">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-indigo-700">Productos a Mover</h2>
+                <button type="button" id="add-item-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold shadow transition flex items-center text-sm">
+                    <i class="fas fa-plus mr-2"></i> Agregar Producto
+                </button>
+            </div>
+            {{ formset.management_form }}
+            {% if formset.non_form_errors %}
+                <div class="bg-red-50 text-red-700 p-2 rounded mb-2 text-sm font-bold">{{ formset.non_form_errors }}</div>
+            {% endif %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[900px]">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 uppercase text-xs border-b">
+                            <th class="py-3 px-2 w-[20%]">Categoría</th>
+                            <th class="py-3 px-2 w-[30%]">Producto</th>
+                            <th class="py-3 px-2 w-[15%]">Cant. (Paq)</th>
+                            <th class="py-3 px-2 w-[15%] col-costo hidden">Costo Unit. (Bs)</th>
+                            <th class="py-3 px-2 w-[15%] text-gray-400">Info Calculada</th>
+                            <th class="py-3 px-2 w-[5%] text-center"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="items-body">
+                        {% for form in formset %}
+                        <tr class="item-row border-b border-gray-100 hover:bg-gray-50 transition align-top">
+                            <td class="p-2">{{ form.categoria_temp }}</td>
+                            <td class="p-2">
+                                {{ form.producto }}
+                                {% if form.producto.errors %}<div class="text-red-500 text-xs">{{ form.producto.errors }}</div>{% endif %}
+                            </td>
+                            <td class="p-2">
+                                {{ form.cantidad }}
+                                {% if form.cantidad.errors %}<div class="text-red-500 text-xs">{{ form.cantidad.errors }}</div>{% endif %}
+                            </td>
+                            <td class="p-2 col-costo hidden">{{ form.costo_unitario_bs }}</td>
+                            <td class="p-2 text-xs text-gray-500 info-cell">
+                                <div class="info-unidades text-indigo-600 font-bold">-</div>
+                                <div class="info-usd text-green-600 font-bold hidden">-</div>
+                            </td>
+                            <td class="p-2 text-center align-middle">
+                                <button type="button" class="text-red-400 hover:text-red-600 delete-row-btn transition"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-4 pb-10">
+            <a href="{% url 'movimientoAPP:movimiento_list' %}" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">Cancelar</a>
+            <button type="submit" class="px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 shadow-lg transform hover:-translate-y-0.5 transition">
+                <i class="fas fa-save mr-2"></i> Guardar Todo
+            </button>
+        </div>
+    </form>
     
-    </div> 
-    
-</div> 
+    <table style="display:none">
+        <tbody id="empty-row-template">
+            <tr class="item-row border-b border-gray-100 hover:bg-gray-50 transition align-top">
+                <td class="p-2">{{ formset.empty_form.categoria_temp }}</td>
+                <td class="p-2">{{ formset.empty_form.producto }}</td>
+                <td class="p-2">{{ formset.empty_form.cantidad }}</td>
+                <td class="p-2 col-costo hidden">{{ formset.empty_form.costo_unitario_bs }}</td>
+                <td class="p-2 text-xs text-gray-500 info-cell">
+                    <div class="info-unidades text-indigo-600 font-bold">-</div>
+                    <div class="info-usd text-green-600 font-bold hidden">-</div>
+                </td>
+                <td class="p-2 text-center align-middle">
+                    <button type="button" class="text-red-400 hover:text-red-600 delete-row-btn"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script>
-    // 1. OBTENER VARIABLES DESDE DJANGO (views.py)
-    // =================================================
-    const productosData = JSON.parse('{{ productos_data_json|safe }}');
-    const IS_ADMIN = {{ is_admin|yesno:"true,false" }};
-    const USER_DEPTO_PK = "{{ user_depto_pk|default_if_none:'' }}"; 
-    const isEditMode = {{ is_edit_mode|yesno:"true,false" }};
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        const URL_LOAD_PRODUCTOS = "{% url 'movimientoAPP:ajax_load_productos' %}";
+        const URL_GET_STOCK_DEPTO = "{% url 'movimientoAPP:ajax_get_stock_departamento' %}";
+        const productosData = JSON.parse('{{ productos_data_json|safe }}');
+        const IS_ADMIN = {{ is_admin|yesno:"true,false" }};
+        const USER_DEPTO_PK = "{{ user_depto_pk|default_if_none:'' }}"; 
 
-    const URL_LOAD_CATEGORIAS = "{% url 'movimientoAPP:ajax_load_categorias' %}";
-    const URL_LOAD_PRODUCTOS = "{% url 'movimientoAPP:ajax_load_productos' %}";
-    const URL_GET_STOCK_DEPTO = "{% url 'movimientoAPP:ajax_get_stock_departamento' %}";
-
-
-    document.addEventListener('DOMContentLoaded', function() {
-        
-        // 2. OBTENER TODOS LOS ELEMENTOS DEL FORMULARIO
-        // =================================================
-        const tipoField = document.getElementById('id_tipo');
-        const categoriaField = document.getElementById('select-categoria'); 
-        const productoField = document.getElementById('select-producto'); 
-        const cantidadField = document.getElementById('id_cantidad');
-        const proveedorWrapper = document.getElementById('field_proveedor_wrapper');
-        const origenWrapper = document.getElementById('field_departamento_origen_wrapper');
-        const destinoWrapper = document.getElementById('field_departamento_destino_wrapper');
-        
-        const origenSelect = document.getElementById('id_departamento_origen');
-        const destinoSelect = document.getElementById('id_departamento_destino'); 
-        
-        const numeroFacturaWrapper = document.getElementById('field_numero_factura_wrapper');
-        const costoBsWrapper = document.getElementById('field_costo_unitario_bs_wrapper');
-        const tasaCambioWrapper = document.getElementById('field_tasa_cambio_wrapper');
-        const costoBsField = document.getElementById('id_costo_unitario_bs');
-        const tasaCambioField = document.getElementById('id_tasa_cambio');
-        
-        const calculoUSDWrapper = document.getElementById('calculo_usd_wrapper');
-        const refPaqueteUSDDisplay = document.getElementById('ref_paquete_usd_display');
-        const refUnitarioUSDDisplay = document.getElementById('ref_unitario_usd_display'); 
-        const costoTotalUSDDisplay = document.getElementById('costo_total_usd_display');
-        
-        const calculoWrapper = document.getElementById('calculo_wrapper');
-        const unidadDisplay = document.getElementById('unidad_display');
-        const totalDisplay = document.getElementById('total_display');
-
-        const infoPanelsWrapper = document.getElementById('info-panels-wrapper');
-        const stockOrigenPanel = document.getElementById('stock-origen-panel');
-        const stockDestinoPanel = document.getElementById('stock-destino-panel');
-        
-        const stockDisponibleWrapper = document.getElementById('stock_disponible_wrapper');
-        const stockDisponibleDisplay = document.getElementById('stock_disponible_display');
-        
-        // --- ¡NUEVO! Span para unidades de stock ---
-        const stockUnidadesDisplay = document.getElementById('stock_unidades_display');
-
-
-        // 3. LÓGICA DE MODO EDICIÓN
-        // =================================================
-        if (isEditMode) {
-            // ... (Lógica de deshabilitar campos sin cambios) ...
-            return; 
-        }
-
-        // 4. FUNCIONES DE CÁLCULO
-        // =================================================
-        
-        // --- ¡FUNCIÓN MODIFICADA! ---
-        function calcularTotal() { 
-            // 1. Cálculo de unidades a mover (sin cambios)
-            const productoId = productoField.value;
-            const cantidadPaquetes = parseFloat(cantidadField.value) || 0;
-            
-            if (productoId && cantidadPaquetes > 0 && productosData[productoId]) {
-                const unidadMedida = parseFloat(productosData[productoId]) || 1.0;
-                if(calculoWrapper) calculoWrapper.style.display = 'block';
-                const totalUnidades = (cantidadPaquetes * unidadMedida); 
-                if(unidadDisplay) unidadDisplay.textContent = `${unidadMedida.toFixed(2)}`;
-                if(totalDisplay) totalDisplay.textContent = `${totalUnidades.toFixed(2)}`;
-            } else {
-                if(calculoWrapper) calculoWrapper.style.display = 'none';
-            }
-
-            // --- ¡NUEVO! Mostrar stock disponible (con paquetes Y unidades) ---
-            const selectedOption = productoField.options[productoField.selectedIndex];
-            const stockPaquetesStr = selectedOption ? selectedOption.getAttribute('data-stock') : null; 
-            const unidadMedidaStr = selectedOption ? selectedOption.getAttribute('data-unidad-medida') : null; // <-- Obtenemos la unidad de medida
-            const tipo = tipoField.value;
-
-            if (tipo !== 'ENTRADA' && stockPaquetesStr !== null && stockPaquetesStr !== 'null' && stockPaquetesStr !== undefined) {
-                const stockPaquetes = parseFloat(stockPaquetesStr) || 0;
-                const unidadMedida = parseFloat(unidadMedidaStr) || 0;
-                const stockUnidades = stockPaquetes * unidadMedida; // <-- Calculamos
-
-                if(stockDisponibleWrapper) stockDisponibleWrapper.style.display = 'block';
-                if(stockDisponibleDisplay) stockDisponibleDisplay.textContent = stockPaquetes.toFixed(2);
-                if(stockUnidadesDisplay) stockUnidadesDisplay.textContent = stockUnidades.toFixed(2); // <-- Mostramos
-            } else {
-                if(stockDisponibleWrapper) stockDisponibleWrapper.style.display = 'none';
-            }
-        }
-        
-        // --- ¡NUEVA FUNCIÓN! ---
-        function loadStockPanel(departamentoId, panelElement) {
-            if (!departamentoId) {
-                panelElement.style.display = 'none';
-                panelElement.innerHTML = '';
-                return;
-            }
-            
-            panelElement.style.display = 'block';
-            panelElement.innerHTML = '<p class="text-black italic">Cargando stock...</p>';
-
-            $.ajax({
-                url: URL_GET_STOCK_DEPTO,
-                data: { 'departamento_id': departamentoId },
-                dataType: 'json',
-                success: function(data) {
-                    panelElement.innerHTML = data.html_content;
-                },
-                error: function() {
-                    // Este es el error genérico que viste
-                    panelElement.innerHTML = '<p class="text-red-600 font-bold"><i class="fas fa-exclamation-triangle mr-2"></i>Error al cargar el stock.</p><p class="text-sm text-gray-700">Ocurrió un error en el servidor al consultar el stock.</p>';
+        $(document).ready(function() {
+            function loadStockPanel(deptoId, $container) {
+                if (!deptoId) {
+                    $container.html('<p class="text-gray-400 italic">Seleccione un departamento...</p>');
+                    return;
                 }
-            });
-        }
-
-        // --- (función calcularCostoUSD sin cambios) ---
-        function calcularCostoUSD() { 
-            const tipo = tipoField.value;
-             if (tipo !== 'ENTRADA' || !costoBsField || !tasaCambioField || !productoField) {
-                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
-                return;
-            }
-
-            const costoUnitarioBs = parseFloat(costoBsField.value) || 0;
-            const tasaCambio = parseFloat(tasaCambioField.value) || 0;
-            const cantidadPaquetes = parseFloat(cantidadField.value) || 0;
-            const productoId = productoField.value; 
-
-            let unidadMedida = 1.0;
-            if (productoId && productosData[productoId]) {
-                unidadMedida = parseFloat(productosData[productoId]) || 1.0;
-            }
-
-            if (costoUnitarioBs > 0 && tasaCambio > 0 && cantidadPaquetes > 0 && productoId) {
-                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'block';
-
-                const refUnitarioUSDPaquete = costoUnitarioBs / tasaCambio;
-                const costoTotalUSD = refUnitarioUSDPaquete * cantidadPaquetes;
-                
-                let refUnitarioUSDUnidad = 0;
-                if (unidadMedida > 0) {
-                    refUnitarioUSDUnidad = refUnitarioUSDPaquete / unidadMedida;
-                }
-
-                if(refPaqueteUSDDisplay) refPaqueteUSDDisplay.textContent = `$${refUnitarioUSDPaquete.toFixed(2)}`;
-                if(refUnitarioUSDDisplay) refUnitarioUSDDisplay.textContent = `$${refUnitarioUSDUnidad.toFixed(4)}`; 
-                if(costoTotalUSDDisplay) costoTotalUSDDisplay.textContent = `$${costoTotalUSD.toFixed(2)}`;
-
-            } else {
-                if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
-            }
-        }
-        
-        // 5. FUNCIÓN PRINCIPAL (Toggle y Lógica de Permisos)
-        // =================================================
-        function toggleFields() { 
-            if (isEditMode) return; 
-            
-            const tipo = tipoField.value;
-            const deptoOrigenId = origenSelect.value;
-            const deptoDestinoId = destinoSelect.value;
-
-            // ... (Ocultar wrappers sin cambios) ...
-            if (proveedorWrapper) proveedorWrapper.style.display = 'none';
-            if (origenWrapper) origenWrapper.style.display = 'none';
-            if (destinoWrapper) destinoWrapper.style.display = 'none';
-            if (numeroFacturaWrapper) numeroFacturaWrapper.style.display = 'none';
-            if (costoBsWrapper) costoBsWrapper.style.display = 'none';
-            if (tasaCambioWrapper) tasaCambioWrapper.style.display = 'none';
-            if (calculoUSDWrapper) calculoUSDWrapper.style.display = 'none';
-            if (stockDisponibleWrapper) stockDisponibleWrapper.style.display = 'none';
-
-            // ... (Lógica de visibilidad de campos sin cambios) ...
-            if (destinoSelect) {
-                Array.from(destinoSelect.options).forEach(option => {
-                    option.style.display = 'block'; 
-                    option.disabled = false; 
+                $container.html('<p class="text-gray-500"><i class="fas fa-spinner fa-spin"></i> Cargando stock...</p>');
+                $.ajax({
+                    url: URL_GET_STOCK_DEPTO,
+                    data: { 'departamento_id': deptoId },
+                    success: function(data) { $container.html(data.html_content); },
+                    error: function() { $container.html('<p class="text-red-500">Error al cargar stock.</p>'); }
                 });
             }
 
-            if (tipo === 'ENTRADA') {
-                if (proveedorWrapper) proveedorWrapper.style.display = 'block';
-                if (numeroFacturaWrapper) numeroFacturaWrapper.style.display = 'block'; 
-                if (destinoWrapper) destinoWrapper.style.display = 'block';
-                if (costoBsWrapper) costoBsWrapper.style.display = 'block';
-                if (tasaCambioWrapper) tasaCambioWrapper.style.display = 'block';
+            function toggleHeader() {
+                const tipo = $('#id_tipo').val();
+                const $origen = $('#wrapper-origen'), $destino = $('#wrapper-destino');
+                const $prov = $('#wrapper-proveedor'), $fact = $('#wrapper-factura'), $tasa = $('#wrapper-tasa');
+                const $cols = $('.col-costo');
+                const $infoUsd = $('.info-usd');
+                const $panelsWrapper = $('#info-panels-wrapper');
+                const $panelOrigenContainer = $('#panel-origen-container');
+                const $panelDestinoContainer = $('#panel-destino-container');
+                
+                // Selectores
+                const $destinoSelect = $('#id_departamento_destino');
 
-                if (!IS_ADMIN && USER_DEPTO_PK && destinoSelect) {
-                    Array.from(destinoSelect.options).forEach(option => {
-                        if (option.value !== USER_DEPTO_PK && option.value !== "") {
-                            option.style.display = 'none';
-                            option.disabled = true; 
-                        }
-                    });
-                    if (destinoSelect.value !== USER_DEPTO_PK) {
-                        destinoSelect.value = USER_DEPTO_PK;
+                // Reset
+                $origen.hide(); $destino.hide(); $prov.hide(); $fact.hide(); $tasa.hide();
+                $cols.addClass('hidden'); $infoUsd.addClass('hidden');
+                $panelsWrapper.addClass('hidden'); $panelOrigenContainer.addClass('hidden'); $panelDestinoContainer.addClass('hidden');
+                
+                // Desbloquear select destino por defecto
+                $destinoSelect.prop('disabled', false);
+
+                if (tipo === 'ENTRADA') {
+                    $destino.show(); $prov.show(); $fact.show(); $tasa.show();
+                    $cols.removeClass('hidden'); $infoUsd.removeClass('hidden'); 
+                    $panelsWrapper.removeClass('hidden'); $panelDestinoContainer.removeClass('hidden');
+                    
+                    // --- LÓGICA DE RESTRICCIÓN PARA NO-ADMIN ---
+                    if (!IS_ADMIN && USER_DEPTO_PK) {
+                        $destinoSelect.val(USER_DEPTO_PK).trigger('change'); // Forzar valor
+                        $destinoSelect.prop('disabled', true); // Bloquear interacción
+                    }
+
+                } else if (tipo === 'SALIDA') {
+                    $origen.show();
+                    $panelsWrapper.removeClass('hidden'); $panelOrigenContainer.removeClass('hidden');
+                    if (!IS_ADMIN && USER_DEPTO_PK) {
+                        $('#id_departamento_origen').val(USER_DEPTO_PK).trigger('change');
+                    }
+
+                } else { // TRANSFERENCIA
+                    $origen.show(); $destino.show();
+                    $panelsWrapper.removeClass('hidden'); $panelOrigenContainer.removeClass('hidden'); $panelDestinoContainer.removeClass('hidden');
+                    
+                    if (!IS_ADMIN && USER_DEPTO_PK) {
+                        $('#id_departamento_origen').val(USER_DEPTO_PK).trigger('change');
+                        // Aseguramos que Destino ESTÉ HABILITADO en transferencia
+                        $destinoSelect.prop('disabled', false); 
                     }
                 }
                 
-            } else if (tipo === 'SALIDA') {
-                if (origenWrapper) origenWrapper.style.display = 'block';
-                
-            } else if (tipo === 'TRANSFERENCIA') {
-                if (origenWrapper) origenWrapper.style.display = 'block';
-                if (destinoWrapper) destinoWrapper.style.display = 'block';
+                // Recargar paneles
+                if (!$panelOrigenContainer.hasClass('hidden')) loadStockPanel($('#id_departamento_origen').val(), $('#stock-origen-content'));
+                if (!$panelDestinoContainer.hasClass('hidden')) loadStockPanel($destinoSelect.val(), $('#stock-destino-content'));
+            }
 
-                if (!IS_ADMIN && USER_DEPTO_PK && destinoSelect) {
-                    Array.from(destinoSelect.options).forEach(option => {
-                        if (option.value === USER_DEPTO_PK) {
-                            option.style.display = 'none';
-                            option.disabled = true; 
+            $('#id_departamento_origen').change(function() {
+                if (!$('#panel-origen-container').hasClass('hidden')) loadStockPanel($(this).val(), $('#stock-origen-content'));
+            });
+            $('#id_departamento_destino').change(function() {
+                if (!$('#panel-destino-container').hasClass('hidden')) loadStockPanel($(this).val(), $('#stock-destino-content'));
+            });
+
+            function initSelect2($container) {
+                $container.find('select').each(function() {
+                    if (!$(this).hasClass("select2-hidden-accessible")) {
+                        $(this).select2({ width: '100%', theme: "classic", placeholder: "Seleccione...", allowClear: true });
+                    }
+                });
+            }
+
+            $('#add-item-btn').click(function() {
+                let idx = $('#id_form-TOTAL_FORMS').val();
+                let newRow = $('#empty-row-template').html().replace(/__prefix__/g, idx);
+                $('#items-body').append(newRow);
+                $('#id_form-TOTAL_FORMS').val(parseInt(idx) + 1);
+                initSelect2($('#items-body tr:last'));
+                toggleHeader();
+            });
+
+            $(document).on('click', '.delete-row-btn', function() {
+                if ($('#items-body tr').length > 1) $(this).closest('tr').remove();
+                else alert("Debe haber al menos un producto.");
+            });
+
+            $(document).on('change', '.item-categoria', function() {
+                let $row = $(this).closest('tr');
+                let catId = $(this).val();
+                let $prod = $row.find('.item-producto');
+                let tipo = $('#id_tipo').val();
+                let deptoId = (tipo !== 'ENTRADA') ? $('#id_departamento_origen').val() : null;
+
+                if (tipo !== 'ENTRADA' && !deptoId) {
+                    alert("Seleccione Origen primero");
+                    $(this).val(null).trigger('change');
+                    return;
+                }
+                if (catId) {
+                    $prod.prop('disabled', true);
+                    $.ajax({
+                        url: URL_LOAD_PRODUCTOS,
+                        data: { 'categoria_id': catId, 'departamento_id': deptoId },
+                        success: function(data) {
+                            $prod.empty().append('<option value="">--- Seleccionar ---</option>');
+                            data.forEach(p => {
+                                let option = new Option(p.nombre, p.id);
+                                $(option).attr('data-stock', p.stock || 0);
+                                $prod.append(option);
+                            });
+                            $prod.prop('disabled', false).trigger('change');
                         }
                     });
                 }
-            }
-            
-            $(destinoSelect).trigger('change');
-            
-            // ... (Lógica de reseteo de Selects sin cambios) ...
-            const $categoriaSelect = $("#select-categoria");
-            const $productoSelect = $("#select-producto");
-            
-            $categoriaSelect.empty().append('<option value="">--- Cargando... ---</option>').prop('disabled', true);
-            $productoSelect.val(null).trigger('change');
-            $productoSelect.empty().append('<option value="">--- Seleccione Categoría ---</option>').prop('disabled', true);
-            $productoSelect.select2('destroy');
-            $productoSelect.select2({ placeholder: "Busque o seleccione un producto", allowClear: true, theme: "default" });
+            });
 
-            // ... (Lógica de Paneles de Info sin cambios) ...
-            if (tipo === 'TRANSFERENCIA') {
-                if(infoPanelsWrapper) infoPanelsWrapper.style.display = 'block';
-                loadStockPanel(deptoOrigenId, stockOrigenPanel);
-                loadStockPanel(deptoDestinoId, stockDestinoPanel);
-            } else {
-                if(infoPanelsWrapper) infoPanelsWrapper.style.display = 'none';
-                if(stockOrigenPanel) stockOrigenPanel.style.display = 'none';
-                if(stockDestinoPanel) stockDestinoPanel.style.display = 'none';
-            }
-            
-            // ... (Lógica de carga de Categorías sin cambios) ...
-            let deptoIdParaFiltrar = null;
-            
-            if (tipo === 'SALIDA' || tipo === 'TRANSFERENCIA') {
-                deptoIdParaFiltrar = deptoOrigenId;
-            }
+            function calcularFila($row) {
+                const prodId = $row.find('.item-producto').val();
+                const cant = parseFloat($row.find('.item-cantidad').val()) || 0;
+                const costoBs = parseFloat($row.find('.item-costo').val()) || 0;
+                const tasa = parseFloat($('#id_tasa_cambio').val()) || 0;
+                const tipo = $('#id_tipo').val();
+                const $infoUnid = $row.find('.info-unidades');
+                const $infoUsd = $row.find('.info-usd');
 
-            if (tipo === 'ENTRADA' || deptoIdParaFiltrar) {
-                $.ajax({
-                    url: URL_LOAD_CATEGORIAS,
-                    data: { 'departamento_id': deptoIdParaFiltrar }, 
-                    dataType: 'json',
-                    success: function (data) {
-                        $categoriaSelect.empty().append('<option value="">--- Seleccione una Categoría ---</option>');
-                        $.each(data, function (index, cat) {
-                            $categoriaSelect.append(new Option(cat.nombre, cat.id));
-                        });
-                        $categoriaSelect.prop('disabled', false);
-                    },
-                    error: function() {
-                        $categoriaSelect.empty().append('<option value="">Error al cargar categorías.</option>');
-                        $categoriaSelect.prop('disabled', true); 
-                    }
-                });
-            } else {
-                $categoriaSelect.empty().append('<option value="">--- Seleccione un Origen primero ---</option>').prop('disabled', true);
-            }
-            
-            calcularTotal(); 
-            calcularCostoUSD();
-        }
-
-        // 6. ASIGNAR "LISTENERS"
-        // =================================================
-        // ... (Todos los listeners sin cambios) ...
-        if (tipoField) tipoField.addEventListener('change', toggleFields);
-        if (origenSelect) origenSelect.addEventListener('change', toggleFields);
-        if (destinoSelect) {
-            destinoSelect.addEventListener('change', function() {
-                if (tipoField.value === 'TRANSFERENCIA') {
-                    loadStockPanel(this.value, stockDestinoPanel);
+                if (prodId && productosData[prodId]) {
+                    let factor = parseFloat(productosData[prodId]) || 1;
+                    $infoUnid.text(`${(cant * factor).toFixed(2)} Unid.`);
+                } else {
+                    $infoUnid.text('-');
                 }
-            });
-        }
-        if (productoField) {
-            productoField.addEventListener('change', function() {
-                calcularTotal();
-                calcularCostoUSD();
-            });
-        }
-        if (costoBsField) costoBsField.addEventListener('input', calcularCostoUSD);
-        if (tasaCambioField) tasaCambioField.addEventListener('input', calcularCostoUSD);
-        if (cantidadField) {
-            cantidadField.addEventListener('input', function() {
-                calcularCostoUSD();
-                calcularTotal(); 
-            });
-        }
-        
-        toggleFields();
-    });
-
-    // 7. CÓDIGO AJAX/Select2 (USA jQuery)
-    // =================================================
-    $(document).ready(function() {
-        
-        const productoSelect = $("#select-producto");
-        const categoriaSelect = $("#select-categoria");
-        
-        categoriaSelect.select2({ placeholder: "Seleccione una categoría", allowClear: true, theme: "default" });
-        productoSelect.select2({ placeholder: "Busque o seleccione un producto", allowClear: true, theme: "default" });
-
-        // --- ¡BLOQUE MODIFICADO! ---
-        categoriaSelect.on('change', function () {
-            const categoriaId = $(this).val(); 
-            
-            const tipo = $('#id_tipo').val();
-            let departamentoId = null;
-            if (tipo === 'SALIDA' || tipo === 'TRANSFERENCIA') {
-                departamentoId = $('#id_departamento_origen').val();
+                if (tipo === 'ENTRADA' && costoBs > 0 && tasa > 0) {
+                    $infoUsd.text(`$${(costoBs / tasa).toFixed(2)} /paq`);
+                } else {
+                    $infoUsd.text('');
+                }
             }
 
-            productoSelect.val(null).trigger('change'); 
-            productoSelect.empty().prop('disabled', true);
-            productoSelect.select2('destroy'); 
+            $(document).on('change', '.item-producto', function() { calcularFila($(this).closest('tr')); });
+            $(document).on('input', '.item-cantidad, .item-costo', function() { calcularFila($(this).closest('tr')); });
+            $('#id_tasa_cambio').on('input', function() { $('#items-body tr').each(function() { calcularFila($(this)); }); });
 
-            if (categoriaId) {
-                productoSelect.empty().append('<option value="">--- Cargando productos... ---</option>');
-                
-                $.ajax({
-                    url: URL_LOAD_PRODUCTOS, 
-                    data: { 
-                        'categoria_id': categoriaId,
-                        'departamento_id': departamentoId
-                    },
-                    dataType: 'json',
-                    success: function (data) {
-                        productoSelect.empty().append('<option value="">--- Seleccione un Producto ---</option>');
-                        
-                        $.each(data, function (index, producto) {
-                            const option = new Option(producto.nombre, producto.id);
-                            
-                            // --- ¡NUEVO! Guardamos ambos atributos ---
-                            $(option).attr('data-stock', producto.stock); 
-                            $(option).attr('data-unidad-medida', producto.unidad_medida); // <-- AÑADIDO
-                            
-                            productoSelect.append(option);
-                        });
-                        
-                        productoSelect.prop('disabled', false);
-                        productoSelect.select2({ placeholder: "Busque o seleccione un producto", allowClear: true, theme: "default" });
-
-                        // ... (Lógica de recarga de form sin cambios) ...
-                        const initialProductoId = productoSelect.attr('data-initial');
-                        if (initialProductoId) {
-                            productoSelect.val(initialProductoId).trigger('change');
-                            productoSelect.removeAttr('data-initial'); 
-                        }
-                        if (productoSelect.val()) {
-                             productoSelect.trigger('change');
-                        }
-                        // --- Fin lógica recarga ---
-                    },
-                    error: function() {
-                        productoSelect.empty().append('<option value="">Error al cargar productos.</option>');
-                        productoSelect.prop('disabled', false);
-                        productoSelect.select2({ placeholder: "Error al cargar" });
-                    }
-                });
-            } else {
-                productoSelect.empty().append('<option value="">--- Seleccione una Categoría primero ---</option>');
-                productoSelect.prop('disabled', false);
-                productoSelect.select2({ placeholder: "Busque o seleccione un producto", allowClear: true, theme: "default" });
-            }
+            $('#id_tipo').change(toggleHeader);
+            toggleHeader();
+            initSelect2($('#items-body'));
         });
-        
-        // ... (Lógica de recarga de form sin cambios) ...
-        if (categoriaSelect.val()) {
-            if (productoSelect.val()) {
-                productoSelect.attr('data-initial', productoSelect.val()); 
-            }
-            categoriaSelect.trigger('change'); 
-        } 
-    });
-</script>
+    </script>
+    {% endif %}
+</div>
 {% endblock %}

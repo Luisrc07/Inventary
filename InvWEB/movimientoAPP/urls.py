@@ -19,4 +19,6 @@ urlpatterns = [
 
     path('ajax/load-categorias/', views.load_categorias, name='ajax_load_categorias'),
     path('ajax/get-stock-departamento/', views.get_stock_departamento, name='ajax_get_stock_departamento'),
+
+    path('editar/<pk>/', views.MovimientoUpdateView.as_view(), name='movimiento_editar'),
 ]

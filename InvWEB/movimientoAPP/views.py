@@ -1,57 +1,40 @@
 # -------------------------------------------------------------------------
-# Copyright (C) 2025 Luisrc07 - Luis Rodriguez
-#
-# Este programa es software libre: usted puede redistribuirlo y/o modificarlo
-# bajo los términos de la Licencia Pública General GNU publicada
-# por la Free Software Foundation, ya sea la versión 3 de la Licencia,
-# o (a su elección) cualquier versión posterior.
-#
-# Este programa se distribuye con la esperanza de que sea útil, pero
-# SIN NINGUNA GARANTÍA; sin incluso la garantía implícita de
-# COMERCIABILIDAD o IDONEIDAD PARA UN PROPÓSITO PARTICULAR.
-# Consulte la Licencia Pública General GNU para más detalles.
-#
-# Usted debería haber recibido una copia de la Licencia Pública General GNU
-# junto con este programa. Si no, consulte <https://www.gnu.org/licenses/>.
+# views.py (COPIA Y REEMPLAZA TODO EL CONTENIDO)
 # -------------------------------------------------------------------------
 
 import json
 from django.urls import reverse_lazy
-from django.views.generic import ListView, CreateView, UpdateView
+from django.views.generic import ListView, UpdateView
+from django.views import View # <--- Necesario para la nueva lógica
 from django.contrib import messages
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse 
-from django.db.models import Q 
-from django.db.models import F, Value
+from django.db.models import Q, F, Value
 from django.db.models.functions import Coalesce
-from django.shortcuts import get_object_or_404
-from django.template.loader import render_to_string
+from django.shortcuts import get_object_or_404, render, redirect
+from django.template.loader import render_to_string, get_template
 from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
 from xhtml2pdf import pisa
-from django.template.loader import get_template
+from django.db import transaction 
 
-
-# --- Importaciones de Modelos ---
-# (Usando los nombres de tus models.py)
+# Importaciones de Modelos
 from .models import Movimiento, StockActual
 from inventarioAPP.models import Producto, Categoria 
 from departamentoAPP.models import Departamento
+from proveedorAPP.models import Proveedor 
 
-# --- Importaciones de Formularios ---
-from .forms import MovimientoForm
+# Importaciones de Formularios (Asegúrate que forms.py tenga estas clases)
+from .forms import MovimientoForm, MovimientoCabeceraForm, MovimientoFormSet
 
-# --- ¡IMPORTACIONES CLAVE DE PERMISOS! ---
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
-
 # =========================================================================
-# VISTAS DE STOCK (CON PERMISOS)
+# VISTAS DE STOCK (Se mantienen igual)
 # =========================================================================
 
 @method_decorator(never_cache, name='dispatch')
 class StockGroupedListview(LoginRequiredMixin, ListView):
-    # ... (Sin cambios) ...
     model = Departamento 
     template_name = 'stock/list_grouped.html' 
     context_object_name = 'departamentos'
@@ -59,8 +42,7 @@ class StockGroupedListview(LoginRequiredMixin, ListView):
     def get_queryset(self):
         perfil = self.request.user.perfil
         base_qs = Departamento.objects.filter(activo=True).prefetch_related(
-            'perfiles__user', 
-            'stock_items__producto' # 'stock_items' viene de tu models.py
+            'perfiles__user', 'stock_items__producto'
         )
         if perfil.es_admin:
             return base_qs
@@ -68,7 +50,6 @@ class StockGroupedListview(LoginRequiredMixin, ListView):
 
 @method_decorator(never_cache, name='dispatch')
 class StockListview(LoginRequiredMixin, ListView):
-    # ... (Sin cambios) ...
     model = StockActual
     template_name = 'stock/list.html'
     context_object_name = 'stockactual'
@@ -83,12 +64,11 @@ class StockListview(LoginRequiredMixin, ListView):
         return base_qs.filter(departamento=perfil.departamento)
 
 # =========================================================================
-# VISTAS DE MOVIMIENTO (CON PERMISOS)
+# VISTAS DE MOVIMIENTO
 # =========================================================================
 
 @method_decorator(never_cache, name='dispatch')
 class MovimientoListview(LoginRequiredMixin, ListView):
-
     model = Movimiento
     template_name = 'movimiento/list.html'
     context_object_name = 'movimientos'
@@ -96,7 +76,6 @@ class MovimientoListview(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         perfil = self.request.user.perfil
-        
         if perfil.es_admin:
             base_qs = Movimiento.objects.all().select_related(
                 'producto', 'departamento_origen', 'departamento_destino'
@@ -130,159 +109,171 @@ class MovimientoListview(LoginRequiredMixin, ListView):
         context['departamento_id'] = self.request.GET.get('departamento_id', '')
         return context
 
+# --- ESTA ES LA CLASE MODIFICADA PARA CARGA MÚLTIPLE ---
 @method_decorator(never_cache, name='dispatch')
-class MovimientoCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-
-    model = Movimiento
+class MovimientoCreateView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """
+    Vista personalizada que maneja Cabecera + Lista de Productos (FormSet).
+    Permite guardar múltiples productos en una sola transacción.
+    """
     template_name = 'movimiento/form.html'
-    form_class = MovimientoForm
-    success_url = reverse_lazy('movimientoAPP:movimiento_list')
 
     def test_func(self):
-        perfil = self.request.user.perfil
-        return perfil.es_admin or perfil.es_gerente
+        return self.request.user.perfil.es_admin or self.request.user.perfil.es_gerente
 
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        productos_data = {
-            str(p.id): str(p.unidad_medida) 
-            for p in Producto.objects.filter(activo=True)
-        }
-        context['productos_data_json'] = json.dumps(productos_data)
-
+    def get(self, request, *args, **kwargs):
+        # 1. Instanciamos formulario de cabecera y el conjunto de formularios (formset) vacíos
+        cabecera_form = MovimientoCabeceraForm(user=request.user)
+        formset = MovimientoFormSet()
+        
+        # 2. Preparamos datos JSON para cálculos en Javascript (Unidad de Medida)
+        productos_data = {str(p.id): str(p.unidad_medida) for p in Producto.objects.filter(activo=True)}
+        
         user_depto_pk = None
-        if hasattr(self.request.user, 'perfil') and self.request.user.perfil.departamento:
-            user_depto_pk = self.request.user.perfil.departamento.pk
-            
-        context['user_depto_pk'] = user_depto_pk
-        context['is_admin'] = self.request.user.perfil.es_admin
-        
-        return context
-    
-    def form_valid(self, form):
+        if hasattr(request.user, 'perfil') and request.user.perfil.departamento:
+            user_depto_pk = request.user.perfil.departamento.pk
 
-        form.instance.usuario_registra = self.request.user
-        tipo = form.cleaned_data.get('tipo')
+        return render(request, self.template_name, {
+            'cabecera_form': cabecera_form,
+            'formset': formset,
+            'productos_data_json': json.dumps(productos_data),
+            'is_admin': request.user.perfil.es_admin,
+            'user_depto_pk': user_depto_pk,
+            'is_edit_mode': False
+        })
+
+    def post(self, request, *args, **kwargs):
+        cabecera_form = MovimientoCabeceraForm(request.POST, user=request.user)
+        formset = MovimientoFormSet(request.POST)
         
-        if tipo == 'ENTRADA':
-            producto = form.cleaned_data.get('producto')
-            costo_bs = form.cleaned_data.get('costo_unitario_bs') 
-            tasa = form.cleaned_data.get('tasa_cambio')
-            
-            if (producto and producto.unidad_medida and producto.unidad_medida > 0 
-                and costo_bs and costo_bs > 0 and tasa and tasa > 0):
-                costo_paquete_usd = costo_bs / tasa
-                costo_unidad_usd = costo_paquete_usd / producto.unidad_medida
-                form.instance.costo_unitario_usd = costo_unidad_usd
-            else:
-                form.instance.costo_unitario_usd = None
+        # Recargamos data de productos por si hay error
+        productos_data = {str(p.id): str(p.unidad_medida) for p in Producto.objects.filter(activo=True)}
+
+        if cabecera_form.is_valid() and formset.is_valid():
+            data_comun = cabecera_form.cleaned_data
+            tipo = data_comun['tipo']
+            count_registrados = 0
+
+            try:
+                with transaction.atomic(): # Asegura integridad: se guardan todos o ninguno
+                    for form in formset:
+                        # Verificamos que la fila no esté vacía (tenga producto y cantidad)
+                        if form.cleaned_data and form.cleaned_data.get('producto') and form.cleaned_data.get('cantidad'):
+                            producto = form.cleaned_data['producto']
+                            cantidad = form.cleaned_data['cantidad']
+                            costo_bs = form.cleaned_data.get('costo_unitario_bs')
+                            
+                            # Creamos el objeto Movimiento
+                            mov = Movimiento(
+                                tipo=tipo,
+                                usuario_registra=request.user,
+                                departamento_origen=data_comun.get('departamento_origen'),
+                                departamento_destino=data_comun.get('departamento_destino'),
+                                proveedor=data_comun.get('proveedor'),
+                                numero_factura=data_comun.get('numero_factura'),
+                                tasa_cambio=data_comun.get('tasa_cambio'),
+                                observaciones=data_comun.get('observaciones'),
+                                producto=producto,
+                                cantidad=cantidad,
+                                costo_unitario_bs=costo_bs
+                            )
+
+                            # Cálculo especial de Costo USD (Solo para Entradas)
+                            # Para Salidas/Transferencias, el modelo se encarga de heredar el costo
+                            if tipo == 'ENTRADA':
+                                tasa = data_comun.get('tasa_cambio')
+                                if producto.unidad_medida and costo_bs and tasa and tasa > 0:
+                                    costo_paq_usd = float(costo_bs) / float(tasa)
+                                    mov.costo_unitario_usd = costo_paq_usd / float(producto.unidad_medida)
+                            
+                            mov.save() # Al guardar, el modelo descuenta/suma al stock
+                            count_registrados += 1
+                
+                if count_registrados > 0:
+                    messages.success(request, f"Éxito: Se registraron {count_registrados} movimientos correctamente.")
+                    return redirect('movimientoAPP:movimiento_list')
+                else:
+                    messages.warning(request, "La lista de productos estaba vacía. No se guardó nada.")
+
+            except Exception as e:
+                messages.error(request, f"Error al guardar: {str(e)}")
+        
         else:
-            form.instance.costo_unitario_usd = None
-        try:
-            return super().form_valid(form)
-        except ValueError as e:
-            form.add_error(None, str(e))
-            return self.form_invalid(form)
+            messages.error(request, "Hay errores en el formulario. Por favor revise los campos resaltados en rojo.")
+
+        # Si hubo error, volvemos a renderizar con los datos ingresados
+        return render(request, self.template_name, {
+            'cabecera_form': cabecera_form,
+            'formset': formset,
+            'productos_data_json': json.dumps(productos_data),
+            'is_admin': request.user.perfil.es_admin,
+            'user_depto_pk': request.user.perfil.departamento.pk if request.user.perfil.departamento else None,
+            'is_edit_mode': False
+        })
 
 @method_decorator(never_cache, name='dispatch')
 class MovimientoUpdateView(LoginRequiredMixin, UpdateView):
-
+    """
+    Vista simple para editar solo observaciones de un movimiento existente.
+    """
     model = Movimiento
+    form_class = MovimientoForm # Usa el form simple (solo observaciones)
     template_name = 'movimiento/form.html'
-    fields = ['observaciones'] 
     success_url = reverse_lazy('movimientoAPP:movimiento_list')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['is_edit_mode'] = True
+        context['is_edit_mode'] = True # Bandera clave para el template
         return context
 
 # =========================================================================
-# VISTA DE REPORTE PDF (CON PERMISOS)
+# VISTA DE REPORTE PDF
 # =========================================================================
 
 def generar_reporte_stock_pdf(request, pk):
     depto = get_object_or_404(
-        Departamento.objects.prefetch_related(
-            'perfiles__user', 
-            'stock_items__producto'
-        ), 
-        pk=pk
+        Departamento.objects.prefetch_related('perfiles__user', 'stock_items__producto'), pk=pk
     )
-
     perfil = request.user.perfil
     if not perfil.es_admin and perfil.departamento != depto:
         return HttpResponse("Permiso Denegado.", status=403)
 
-    stock_items = [
-        item for item in depto.stock_items.all() if item.cantidad > 0
-    ]
+    stock_items = [item for item in depto.stock_items.all() if item.cantidad > 0]
     
-    context = {
-        'depto': depto,
-        'stock_items': stock_items,
-        'fecha_actual': timezone.now(), 
-    }
-    
-    # --- LÓGICA DE XHTML2PDF ---
+    context = {'depto': depto, 'stock_items': stock_items, 'fecha_actual': timezone.now()}
     template_path = 'stock/reporte_pdf_template.html'
     template = get_template(template_path)
     html = template.render(context)
-
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="reporte_stock_{depto.nombre}.pdf"'
-
-    pisa_status = pisa.CreatePDF(
-       html, dest=response
-    )
-
+    pisa_status = pisa.CreatePDF(html, dest=response)
     if pisa_status.err:
        return HttpResponse('Hubo errores al generar el PDF <pre>' + html + '</pre>')
-    
     return response
+
 # =========================================================================
 # VISTAS AJAX 
 # =========================================================================
 
 def load_categorias(request):
-    """
-    Carga categorías para el select dinámico.
-    (Esta vista ya está funcionando bien según tu reporte)
-    """
     departamento_id = request.GET.get('departamento_id')
     
     if departamento_id:
         product_ids_in_stock = StockActual.objects.filter(
-            departamento_id=departamento_id,
-            cantidad__gt=0
+            departamento_id=departamento_id, cantidad__gt=0
         ).values_list('producto_id', flat=True)
 
         category_ids = Producto.objects.filter(
             pk__in=product_ids_in_stock
-        ).exclude(
-            categoria__isnull=True  # 'categoria' es el campo en tu models.py
-        ).values_list('categoria_id', flat=True).distinct()
+        ).exclude(categoria__isnull=True).values_list('categoria_id', flat=True).distinct()
 
         categorias = Categoria.objects.filter(pk__in=category_ids).order_by('nombre')
     else:
         categorias = Categoria.objects.all().order_by('nombre')
     
-    categorias_list = [{'id': str(c.pk), 'nombre': c.nombre} for c in categorias]
-    return JsonResponse(categorias_list, safe=False)
-
+    return JsonResponse([{'id': str(c.pk), 'nombre': c.nombre} for c in categorias], safe=False)
 
 def get_stock_departamento(request):
-    """
-    Obtiene el stock completo de un departamento (HTML) para mostrarlo en el panel
-    de información de 'Transferencia'.
-    (Esta vista fallaba por TemplateDoesNotExist, no por la lógica)
-    """
     departamento_id = request.GET.get('departamento_id')
     if not departamento_id:
         return JsonResponse({'error': 'No se proporcionó departamento'}, status=400)
@@ -290,43 +281,28 @@ def get_stock_departamento(request):
     depto = get_object_or_404(Departamento, pk=departamento_id)
     
     stock_items = StockActual.objects.filter(
-        departamento=depto,
-        cantidad__gt=0
+        departamento=depto, cantidad__gt=0
     ).select_related('producto', 'producto__categoria').annotate(
         categoria_orden=Coalesce('producto__categoria__nombre', Value('Sin Categoría'))
     ).order_by('categoria_orden', 'producto__nombre')
     
     stock_agrupado = {}
     for item in stock_items:
-        categoria_nombre = "Sin Categoría"
-        if item.producto.categoria:
-             categoria_nombre = item.producto.categoria.nombre
-        
-        if categoria_nombre not in stock_agrupado:
-            stock_agrupado[categoria_nombre] = []
-            
-        stock_agrupado[categoria_nombre].append({
+        cat_name = item.producto.categoria.nombre if item.producto.categoria else "Sin Categoría"
+        if cat_name not in stock_agrupado: stock_agrupado[cat_name] = []
+        stock_agrupado[cat_name].append({
             'nombre': item.producto.nombre,
             'cantidad': item.cantidad,
-            'unidad_medida': item.producto.unidad_medida, # 'unidad_medida' de  models.py
-            'total_unidades': item.total_unidades # 'total_unidades' de  models.py
+            'unidad_medida': item.producto.unidad_medida, 
+            'total_unidades': item.total_unidades
         })
     
-    # Esta línea es la que fallaba porque no encontraba el archivo
     html_content = render_to_string('movimiento/snippet_stock_departamento.html', {
-        'depto': depto,
-        'stock_agrupado': stock_agrupado,
-        'total_items': stock_items.count()
+        'depto': depto, 'stock_agrupado': stock_agrupado
     })
-    
     return JsonResponse({'html_content': html_content})
 
-
 def load_productos(request):
-    """
-    Carga productos para el select dinámico.
-    ¡MODIFICADO! Ahora también devuelve 'unidad_medida'.
-    """
     categoria_id = request.GET.get('categoria_id')
     departamento_id = request.GET.get('departamento_id') 
     
@@ -344,8 +320,8 @@ def load_productos(request):
         ).values('producto_id', 'cantidad')
         
         stock_dict = {str(item['producto_id']): item['cantidad'] for item in stock_data}
-        producto_ids_con_stock = stock_dict.keys()
-        productos = base_productos.filter(pk__in=producto_ids_con_stock)
+        # Solo productos que tengan stock
+        productos = base_productos.filter(pk__in=stock_dict.keys())
         
         for producto in productos:
             productos_list.append({
@@ -354,9 +330,7 @@ def load_productos(request):
                 'stock': str(stock_dict.get(str(producto.pk), 0)),
                 'unidad_medida': str(producto.unidad_medida) 
             })
-    
     else:
-        # Modo 'ENTRADA'
         for producto in base_productos:
             productos_list.append({
                 'id': str(producto.pk), 
